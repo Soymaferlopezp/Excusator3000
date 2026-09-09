@@ -27,7 +27,7 @@ export function newCaseId(): string {
 
 export function nextAudacity(a: Audacity): Audacity {
   const i = AUDACITY_ORDER.indexOf(a);
-  return AUDACITY_ORDER[Math.min(i + 1, AUDACITY_ORDER.length - 1)];
+  return AUDACITY_ORDER[Math.min(i + 1, AUDACITY_ORDER.length - 1)] ?? "sin_retorno";
 }
 
 export function isMaxAudacity(a: Audacity): boolean {
@@ -86,7 +86,7 @@ export function generateVerdict({ state, locale, audacity }: GenerateOptions): V
     return {
       resultId: `refused-${state.caseId}`,
       caseId: state.caseId,
-      verdict: content.verdicts[1],
+      verdict: content.verdicts[1] ?? "",
       excuse: "",
       followUp: "",
       weakness: "",
