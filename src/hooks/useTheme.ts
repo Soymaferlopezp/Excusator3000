@@ -4,10 +4,14 @@ type Theme = "light" | "dark";
 const KEY = "e3k.theme";
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light",
+  );
 
   useEffect(() => {
-    let initial: Theme = "light";
+    let initial: Theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
     try {
       const stored = localStorage.getItem(KEY) as Theme | null;
       if (stored === "light" || stored === "dark") initial = stored;

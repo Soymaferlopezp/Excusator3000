@@ -1,12 +1,5 @@
 export type Category =
-  | "trabajo"
-  | "estudios"
-  | "familia"
-  | "cita"
-  | "amigos"
-  | "ejercicio"
-  | "favor"
-  | "inconfesable";
+  "trabajo" | "estudios" | "familia" | "cita" | "amigos" | "ejercicio" | "favor" | "inconfesable";
 
 export const CATEGORIES: Category[] = [
   "trabajo",
@@ -24,6 +17,38 @@ export type Drama = "seco" | "cinematografico" | "telenovela";
 export type Audacity = "prudente" | "valiente" | "sin_retorno";
 export type Relationship = "formal" | "cercana" | "confianza";
 
+export type ComedyStyle =
+  | "deadpan"
+  | "bureaucratic"
+  | "hyperSpecific"
+  | "internet"
+  | "selfIncriminating"
+  | "escalation"
+  | "radicalHonesty"
+  | "absurdAuthority";
+
+export type GenerationSignal =
+  | "alreadyConfirmed"
+  | "enthusiasticConfirmation"
+  | "familyPressure"
+  | "authorityFigure"
+  | "closeRelationship"
+  | "formalRelationship"
+  | "socialMediaRisk"
+  | "groupChatEvidence"
+  | "timingConflict"
+  | "transport"
+  | "technology"
+  | "workPressure"
+  | "academicPressure"
+  | "birthday"
+  | "sports"
+  | "dinner"
+  | "favorDebt"
+  | "romanticExpectation"
+  | "lowEnergy"
+  | "visibilityRisk";
+
 export const AUDACITY_ORDER: Audacity[] = ["prudente", "valiente", "sin_retorno"];
 
 export type Locale = "es" | "en" | "pt-BR";
@@ -38,7 +63,15 @@ export interface CaseConfig {
 export interface Question {
   id: string;
   text: string;
-  options: { id: string; label: string; risk: number }[];
+  options: QuestionOption[];
+}
+
+export interface QuestionOption {
+  id: string;
+  label: string;
+  risk: number;
+  /** V2 semantic facts used for selection; optional for legacy locales. */
+  signals?: GenerationSignal[];
 }
 
 export interface ExcuseBlock {
@@ -49,12 +82,31 @@ export interface ExcuseBlock {
   followUp: string;
   weakness: string;
   repair: string;
+  /** Stable premise shared by audacity levels. */
+  conceptId?: string;
+  styles?: ComedyStyle[];
+  signals?: GenerationSignal[];
+  avoidSignals?: GenerationSignal[];
+  relationships?: Relationship[];
+  credibilities?: Credibility[];
+  dramas?: Drama[];
+  /** V2 copy can be authored as a complete sentence without generic suffixes. */
+  modifierMode?: "legacy" | "none" | "drama" | "credibility";
+  weight?: number;
 }
 
 export interface CategoryCopy {
   label: string;
   formal: string;
   description: string;
+}
+
+export interface InstitutionalPunchline {
+  id: string;
+  text: string;
+  minRisk?: number;
+  maxRisk?: number;
+  signals?: GenerationSignal[];
 }
 
 export interface LocaleContent {
@@ -68,10 +120,14 @@ export interface LocaleContent {
   dramaTail: Record<Drama, string>;
   /** Opening clause depending on relationship with the victim. */
   relationshipOpening: Record<Relationship, string>;
+  /** V2 alternatives; legacy locales continue using relationshipOpening. */
+  relationshipOpenings?: Record<Relationship, string[]>;
   /** Extra clause when credibility is impeccable / suspicious. */
   credibilityNote: Record<Credibility, string>;
   riskStatus: { low: string; mid: string; high: string; extreme: string };
+  institutionalPunchlines?: InstitutionalPunchline[];
   refusal: { title: string; body: string };
+  discriminationRefusal?: { title: string; body: string };
 }
 
 export interface CaseAnswer {
