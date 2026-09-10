@@ -74,6 +74,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -84,7 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Tribunal de compromisos sociales: presenta tu caso y recibe una excusa oficialmente autorizada.",
       },
-      { property: "og:title", content: "Excusator3000" },
+      { property: "og:title", content: "Excusator3000 — Oficina de Excusas Improbables" },
       {
         property: "og:description",
         content: "Toda gran excusa merece un juicio justo.",
