@@ -39,8 +39,10 @@ export const Route = createFileRoute("/")({
         content: "Presenta tu caso y recibe una excusa oficialmente autorizada.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://excusator3000.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://excusator3000.lovable.app/" }],
   }),
   component: Index,
 });
