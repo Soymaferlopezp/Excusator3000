@@ -40,7 +40,7 @@ export function Header() {
             onClick={toggle}
             aria-label={t.nav.theme}
             title={t.nav.theme}
-            className="rounded-sm border border-divider px-2.5 py-1.5 font-mono text-[11px] tracking-widest text-muted-foreground hover:text-foreground"
+            className="whitespace-nowrap rounded-sm border border-divider px-2.5 py-1.5 font-mono text-[11px] tracking-widest text-muted-foreground hover:text-foreground"
           >
             ☾/☀
           </button>
