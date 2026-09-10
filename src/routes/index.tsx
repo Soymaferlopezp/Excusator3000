@@ -24,6 +24,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useReducedMotion } from "@/hooks/useTheme";
 
 export const Route = createFileRoute("/")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "Excusator3000 — Toda gran excusa merece un juicio justo" },
