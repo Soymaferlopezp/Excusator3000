@@ -11,43 +11,55 @@ const q = (
 });
 
 const confirmado = q("confirmado", "¿Ya cometiste el error de confirmar asistencia?", [
-  ["No. Todavía soy legalmente libre.", -8],
-  ["Sí, pero sin entusiasmo probatorio.", 4, ["alreadyConfirmed"]],
+  ["No. Mi libertad aún consta en actas.", -8],
   [
-    "Sí. Con emojis. Mi caso es grave.",
+    "Respondí «vemos». Mis abogados sostienen que eso no equivale a confirmar.",
+    4,
+    ["alreadyConfirmed"],
+  ],
+  [
+    "Sí. Con emojis y signos de exclamación. El caso es grave.",
     12,
     ["alreadyConfirmed", "enthusiasticConfirmation", "groupChatEvidence"],
   ],
 ]);
 
 const ubicacion = q("ubicacion", "¿Pueden comprobar fácilmente dónde estás?", [
-  ["Difícilmente.", -6],
-  ["Probablemente.", 6, ["visibilityRisk"]],
-  ["Sí. Cometí errores tecnológicos.", 14, ["visibilityRisk", "socialMediaRisk"]],
+  ["Difícilmente. He aprendido algo de privacidad.", -6],
+  ["Probablemente. Hay testigos con tiempo libre.", 6, ["visibilityRisk"]],
+  ["Sí. Compartí ubicación. Prefiero no declarar más.", 14, ["visibilityRisk", "socialMediaRisk"]],
 ]);
 
 const historial = q("historial", "¿Esta persona conoce tus excusas anteriores?", [
-  ["Es nuestra primera vez.", -5],
-  ["Sospecha algo, pero no tiene pruebas.", 6, ["closeRelationship"]],
-  ["Lleva un registro. Con fechas.", 13, ["closeRelationship", "visibilityRisk"]],
+  ["Es la primera vez. Mi expediente está limpio.", -5],
+  ["Sospecha, pero todavía trabaja sin pruebas.", 6, ["closeRelationship"]],
+  [
+    "Lleva un registro con fechas. Solicito protección de testigos.",
+    13,
+    ["closeRelationship", "visibilityRisk"],
+  ],
 ]);
 
 const tiempo = q("tiempo", "¿Cuánto tiempo necesitas desaparecer?", [
-  ["Un par de horas.", -4],
-  ["La tarde entera.", 5, ["timingConflict"]],
-  ["Preferiría no volver a hablar del tema.", 10, ["timingConflict"]],
+  ["Un par de horas. Desaparición de baja intensidad.", -4],
+  ["La tarde entera. El tribunal debe cubrirme hasta la noche.", 5, ["timingConflict"]],
+  ["Indefinidamente. Solicito archivo sin preguntas.", 10, ["timingConflict"]],
 ]);
 
 const fecha = q("fecha", "¿Aceptarías ofrecer una fecha alternativa?", [
-  ["Sí, y pienso cumplirla.", -10],
-  ["Sí, en un futuro impreciso.", 2],
-  ["No. Esa puerta debe cerrarse.", 9, ["lowEnergy"]],
+  ["Sí, con día y hora. Todavía conservo principios.", -10],
+  ["Sí, en un futuro que mis abogados definirán después.", 2],
+  ["No. Solicito que esa puerta quede administrativamente cerrada.", 9, ["lowEnergy"]],
 ]);
 
 const gravedad = q("gravedad", "¿Qué tan grave sería una cancelación de último minuto?", [
-  ["Nadie lo notaría.", -7],
-  ["Habría comentarios.", 5, ["groupChatEvidence"]],
-  ["Se mencionaría durante años.", 12, ["familyPressure", "groupChatEvidence"]],
+  ["Nadie lo notaría. Mi ausencia ya estaba presupuestada.", -7],
+  ["Habría comentarios y posiblemente un audio.", 5, ["groupChatEvidence"]],
+  [
+    "Se mencionaría durante años. Mi madre ya abrió diligencias.",
+    12,
+    ["familyPressure", "groupChatEvidence"],
+  ],
 ]);
 
 const es: LocaleContent = {
@@ -127,14 +139,14 @@ const es: LocaleContent = {
     "EXPEDIENTE ARCHIVADO DEBAJO DE OTROS PROBLEMAS",
   ],
   deliberation: [
-    "Revisando precedentes cuestionables…",
-    "Consultando al Departamento de Consecuencias…",
-    "Calculando margen de arrepentimiento…",
-    "Eliminando contradicciones evidentes…",
-    "Añadiendo una cantidad prudente de drama…",
-    "Buscando una salida jurídicamente creativa…",
-    "Evaluando daños a su reputación…",
-    "Ignorando recomendaciones de sentido común…",
+    "Contrastando tu versión con decisiones cuestionables anteriores…",
+    "Calculando cuánto entusiasmo dejaste por escrito…",
+    "Consultando jurisprudencia completamente irrelevante…",
+    "Verificando si tu madre ya sospecha…",
+    "Buscando una salida administrativamente defendible…",
+    "Revisando capturas que el grupo todavía no ha aportado…",
+    "Midiendo la resistencia estructural de la coartada…",
+    "Ignorando una recomendación sensata del departamento legal…",
   ],
   dramaTail: {
     seco: "",

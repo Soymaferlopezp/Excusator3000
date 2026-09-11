@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Header } from "@/components/e3k/Header";
 import { Button, MetaLabel, OptionCard, RiskBar, Sheet, Stamp } from "@/components/e3k/primitives";
@@ -53,6 +53,14 @@ const CREDIBILITIES: Credibility[] = ["sospechosa", "razonable", "impecable"];
 const DRAMAS: Drama[] = ["seco", "cinematografico", "telenovela"];
 const AUDACITIES: Audacity[] = ["prudente", "valiente", "sin_retorno"];
 const RELATIONSHIPS: Relationship[] = ["formal", "cercana", "confianza"];
+
+function pickCaseCopy(items: string[], caseId: string, salt: string): string {
+  const hash = [...`${caseId}:${salt}`].reduce(
+    (sum, character) => sum + character.charCodeAt(0),
+    0,
+  );
+  return items[hash % Math.max(1, items.length)] ?? "";
+}
 
 function emptyCase(): CaseState {
   return {
@@ -162,14 +170,16 @@ function Index() {
             state={state}
             questions={questions}
             index={qIndex}
+            reduced={reduced}
             onAnswer={(questionId, optionId, risk) => {
-              const answers = [
-                ...state.answers.filter((a) => a.questionId !== questionId),
-                { questionId, optionId, risk },
-              ];
-              const next = { ...state, answers };
-              setState(next);
-              if (qIndex < questions.length) setQIndex(qIndex + 1);
+              setState((current) => ({
+                ...current,
+                answers: [
+                  ...current.answers.filter((answer) => answer.questionId !== questionId),
+                  { questionId, optionId, risk },
+                ],
+              }));
+              setQIndex((current) => Math.min(current + 1, questions.length));
             }}
             onContext={(context) => setState((s) => ({ ...s, context }))}
             onBack={() => (qIndex === 0 ? setStep("config") : setQIndex(qIndex - 1))}
@@ -183,6 +193,7 @@ function Index() {
             onDone={() => setStep("verdict")}
             messages={content.deliberation}
             stamp={t.deliberation.stamp}
+            sessionLabel={t.deliberation.session}
             skipLabel={t.deliberation.skip}
           />
         )}
@@ -192,6 +203,7 @@ function Index() {
             verdict={verdict}
             state={state}
             copied={copied}
+            reduced={reduced}
             onCopy={copyExcuse}
             onIncrease={increaseAudacity}
             onNewCase={newCase}
@@ -379,6 +391,7 @@ function InterrogationScreen({
   state,
   questions,
   index,
+  reduced,
   onAnswer,
   onContext,
   onBack,
@@ -387,6 +400,7 @@ function InterrogationScreen({
   state: CaseState;
   questions: ReturnType<typeof useI18n>["content"]["questions"][Category];
   index: number;
+  reduced: boolean;
   onAnswer: (questionId: string, optionId: string, risk: number) => void;
   onContext: (context: string) => void;
   onBack: () => void;
@@ -395,54 +409,105 @@ function InterrogationScreen({
   const { t } = useI18n();
   const question = questions[index];
   const total = questions.length;
+  const [pendingOption, setPendingOption] = useState<string | null>(null);
+  const [filingAnswer, setFilingAnswer] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const filingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const answerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setPendingOption(null);
+    setFilingAnswer(false);
+    headingRef.current?.focus({ preventScroll: true });
+  }, [index]);
+
+  useEffect(
+    () => () => {
+      if (filingTimer.current) clearTimeout(filingTimer.current);
+      if (answerTimer.current) clearTimeout(answerTimer.current);
+    },
+    [],
+  );
+
+  const registerAnswer = (questionId: string, optionId: string, risk: number) => {
+    if (pendingOption) return;
+    setPendingOption(optionId);
+    filingTimer.current = setTimeout(() => setFilingAnswer(true), reduced ? 560 : 520);
+    answerTimer.current = setTimeout(
+      () => onAnswer(questionId, optionId, risk),
+      reduced ? 700 : 760,
+    );
+  };
 
   return (
-    <Sheet className="space-y-6">
-      <div>
-        <MetaLabel>
-          {t.interrogation.label} · {Math.min(index + 1, total)}/{total}
-        </MetaLabel>
-        <h1 className="mt-2 font-display text-3xl">
-          {question ? question.text : t.interrogation.contextLabel}
-        </h1>
+    <Sheet className="overflow-hidden p-0 sm:p-0">
+      <div className="border-b border-divider px-5 py-5 sm:px-8">
+        <MetaLabel>{t.verdict.tribunal}</MetaLabel>
+        <p className="mt-1 font-display text-xl">{t.interrogation.label}</p>
       </div>
 
-      {question ? (
-        <div className="space-y-2">
-          {question.options.map((o) => {
-            const answer = state.answers.find((a) => a.questionId === question.id);
-            return (
-              <OptionCard
-                key={o.id}
-                selected={answer?.optionId === o.id}
-                title={o.label}
-                onClick={() => onAnswer(question.id, o.id, o.risk)}
-              />
-            );
-          })}
+      <div
+        key={question?.id ?? "context"}
+        className={`space-y-6 px-5 py-6 sm:px-8 sm:py-8 ${filingAnswer ? "animate-testimony-file" : pendingOption ? "" : "animate-case-page"}`}
+      >
+        <div>
+          <div className="flex flex-wrap justify-between gap-x-5 gap-y-1 border-b border-divider pb-3">
+            <MetaLabel>
+              {t.verdict.file} {state.caseId}
+            </MetaLabel>
+            <MetaLabel>
+              {question
+                ? `${t.interrogation.question} ${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`
+                : t.interrogation.contextTitle}
+            </MetaLabel>
+          </div>
+          <h1 ref={headingRef} tabIndex={-1} className="mt-6 font-display text-2xl sm:text-3xl">
+            {question ? question.text : t.interrogation.contextLabel}
+          </h1>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <label className="label-meta" htmlFor="context">
-            {t.interrogation.contextLabel}
-          </label>
-          <textarea
-            id="context"
-            rows={4}
-            value={state.context}
-            onChange={(e) => onContext(e.target.value)}
-            placeholder={t.interrogation.contextPlaceholder}
-            className="w-full rounded-sm border border-divider bg-paper p-3 text-sm outline-none"
-          />
-          <p className="text-xs text-muted-foreground">{t.interrogation.contextWarning}</p>
-        </div>
-      )}
 
-      <div className="hairline flex flex-wrap justify-between gap-3 pt-5">
-        <Button variant="ghost" onClick={onBack}>
-          {t.interrogation.back}
-        </Button>
-        {!question && <Button onClick={onSubmit}>{t.interrogation.cta}</Button>}
+        {question ? (
+          <div className="space-y-2">
+            {question.options.map((option) => {
+              const answer = state.answers.find((item) => item.questionId === question.id);
+              const registering = pendingOption === option.id;
+              return (
+                <OptionCard
+                  key={option.id}
+                  selected={registering || answer?.optionId === option.id}
+                  status={registering ? t.interrogation.registered : undefined}
+                  title={option.label}
+                  onClick={() => registerAnswer(question.id, option.id, option.risk)}
+                />
+              );
+            })}
+            <span className="sr-only" role="status" aria-live="polite">
+              {pendingOption ? t.interrogation.registered : ""}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <label className="label-meta" htmlFor="context">
+              {t.interrogation.contextTitle}
+            </label>
+            <textarea
+              id="context"
+              rows={4}
+              value={state.context}
+              onChange={(event) => onContext(event.target.value)}
+              placeholder={t.interrogation.contextPlaceholder}
+              className="w-full rounded-sm border border-divider bg-paper p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+            />
+            <p className="text-xs text-muted-foreground">{t.interrogation.contextWarning}</p>
+          </div>
+        )}
+
+        <div className="hairline flex flex-wrap justify-between gap-3 pt-5">
+          <Button variant="ghost" onClick={onBack} disabled={Boolean(pendingOption)}>
+            {t.interrogation.back}
+          </Button>
+          {!question ? <Button onClick={onSubmit}>{t.interrogation.cta}</Button> : null}
+        </div>
       </div>
     </Sheet>
   );
@@ -451,23 +516,25 @@ function InterrogationScreen({
 function DeliberationScreen({
   messages,
   stamp,
+  sessionLabel,
   skipLabel,
   reduced,
   onDone,
 }: {
   messages: string[];
   stamp: string;
+  sessionLabel: string;
   skipLabel: string;
   reduced: boolean;
   onDone: () => void;
 }) {
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() => Date.now() % Math.max(1, messages.length));
   const [sealed, setSealed] = useState(false);
 
   useEffect(() => {
-    const rotate = setInterval(() => setI((n) => (n + 1) % Math.max(1, messages.length)), 800);
-    const seal = setTimeout(() => setSealed(true), reduced ? 600 : 2200);
-    const finish = setTimeout(onDone, reduced ? 1100 : 3000);
+    const rotate = setInterval(() => setI((n) => (n + 1) % Math.max(1, messages.length)), 650);
+    const seal = setTimeout(() => setSealed(true), reduced ? 320 : 1750);
+    const finish = setTimeout(onDone, reduced ? 650 : 2350);
     return () => {
       clearInterval(rotate);
       clearTimeout(seal);
@@ -476,16 +543,14 @@ function DeliberationScreen({
   }, [messages.length, onDone, reduced]);
 
   return (
-    <Sheet className="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
+    <Sheet className="flex min-h-[50vh] flex-col items-center justify-center gap-6 overflow-hidden text-center">
+      <MetaLabel>{sealed ? stamp : sessionLabel}</MetaLabel>
       {sealed ? (
         <Stamp>{stamp}</Stamp>
       ) : (
-        <>
-          <p className="animate-fade font-display text-2xl">{messages[i]}</p>
-          <div className="h-1 w-40 overflow-hidden rounded-sm bg-muted">
-            <div className="h-full w-1/3 animate-pulse bg-stamp" />
-          </div>
-        </>
+        <p key={i} aria-live="polite" className="animate-fade max-w-xl font-display text-2xl">
+          {messages[i]}
+        </p>
       )}
       <Button variant="ghost" onClick={onDone}>
         {skipLabel}
@@ -498,6 +563,7 @@ function VerdictScreen({
   verdict,
   state,
   copied,
+  reduced,
   onCopy,
   onIncrease,
   onNewCase,
@@ -505,17 +571,43 @@ function VerdictScreen({
   verdict: Verdict;
   state: CaseState;
   copied: "idle" | "ok" | "error";
+  reduced: boolean;
   onCopy: () => void;
   onIncrease: () => void;
   onNewCase: () => void;
 }) {
   const { t } = useI18n();
   const maxed = isMaxAudacity(state.config.audacity);
+  const [escalatingTo, setEscalatingTo] = useState<Audacity | null>(null);
+  const riskParts = verdict.riskStatus.split(" · ");
+  const resultStamp = pickCaseCopy(
+    t.verdict.stamps[state.config.audacity],
+    verdict.caseId,
+    state.config.audacity,
+  );
+  const escalationMessage = escalatingTo
+    ? pickCaseCopy(t.verdict.escalation[escalatingTo], verdict.caseId, escalatingTo)
+    : "";
+
+  useEffect(() => {
+    if (!escalatingTo) return;
+    const timer = setTimeout(
+      () => {
+        onIncrease();
+        setEscalatingTo(null);
+      },
+      reduced ? 120 : 900,
+    );
+    return () => clearTimeout(timer);
+  }, [escalatingTo, onIncrease, reduced]);
 
   if (verdict.refused && verdict.refusal) {
     return (
       <Sheet className="space-y-5">
-        <MetaLabel>{t.verdict.tribunal}</MetaLabel>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <MetaLabel>{t.verdict.tribunal}</MetaLabel>
+          <Stamp>{t.verdict.refusalStamp}</Stamp>
+        </div>
         <h1 className="font-display text-3xl">{verdict.refusal.title}</h1>
         <p className="text-muted-foreground">{verdict.refusal.body}</p>
         <div className="hairline pt-5">
@@ -526,67 +618,108 @@ function VerdictScreen({
   }
 
   return (
-    <Sheet className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <MetaLabel>{t.verdict.tribunal}</MetaLabel>
-          <p className="label-meta mt-1">
-            {t.verdict.file} {verdict.caseId} · {t.verdict.audacityLabel}:{" "}
-            {t.options.audacity[state.config.audacity]}
+    <Sheet className="relative overflow-hidden">
+      {escalatingTo ? (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-paper/95 px-5 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <Stamp>
+            {pickCaseCopy(t.verdict.stamps[escalatingTo], verdict.caseId, escalatingTo)}
+          </Stamp>
+          <p className="animate-fade max-w-md font-display text-xl sm:text-2xl">
+            {escalationMessage}
           </p>
         </div>
-        <Stamp>{t.verdict.resolution}</Stamp>
-      </div>
+      ) : null}
 
-      <h1 className="font-display text-2xl sm:text-3xl">{verdict.verdict}</h1>
-
-      <div className="hairline space-y-2 pt-5">
-        <MetaLabel>{t.verdict.authorizedExcuse}</MetaLabel>
-        <p className="text-lg leading-relaxed">{verdict.excuse}</p>
-      </div>
-
-      <div className="hairline space-y-2 pt-5">
-        <MetaLabel>{t.verdict.followUp}</MetaLabel>
-        <p className="text-sm">{verdict.followUp}</p>
-      </div>
-
-      <div className="hairline space-y-2 pt-5">
-        <div className="flex items-baseline justify-between">
-          <MetaLabel>{t.verdict.risk}</MetaLabel>
-          <span className="font-mono text-lg">{verdict.risk}%</span>
+      <div
+        key={verdict.resultId}
+        aria-busy={Boolean(escalatingTo)}
+        className={`space-y-6 ${escalatingTo ? "opacity-20" : "animate-verdict-reveal"}`}
+      >
+        <div className="result-reveal-meta flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <MetaLabel>{t.verdict.tribunal}</MetaLabel>
+            <p className="label-meta mt-1">
+              {t.verdict.file} {verdict.caseId} · {t.verdict.audacityLabel}:{" "}
+              {t.options.audacity[state.config.audacity]}
+            </p>
+          </div>
+          <Stamp>{resultStamp}</Stamp>
         </div>
-        <RiskBar value={verdict.risk} />
-        <p className="text-sm">{verdict.riskStatus}</p>
-        <p className="text-xs text-muted-foreground">{t.verdict.riskDisclaimer}</p>
-      </div>
 
-      <div className="hairline grid gap-4 pt-5 sm:grid-cols-2">
-        <div>
-          <MetaLabel>{t.verdict.weakness}</MetaLabel>
-          <p className="mt-1 text-sm">{verdict.weakness}</p>
-        </div>
-        <div>
-          <MetaLabel>{t.verdict.repair}</MetaLabel>
-          <p className="mt-1 text-sm">{verdict.repair}</p>
-        </div>
-      </div>
+        <h1 className="result-reveal-verdict break-words font-display text-2xl sm:text-3xl">
+          {verdict.verdict}
+        </h1>
 
-      <div className="hairline space-y-3 pt-5">
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={onCopy}>{t.verdict.copy}</Button>
-          <Button variant="outline" onClick={onIncrease} disabled={maxed}>
-            {t.verdict.increaseAudacity}
-          </Button>
-          <Button variant="ghost" onClick={onNewCase}>
-            {t.verdict.newCase}
-          </Button>
+        <div className="result-reveal-body space-y-6">
+          <div className="hairline space-y-2 pt-5">
+            <MetaLabel>{t.verdict.authorizedExcuse}</MetaLabel>
+            <p className="text-lg leading-relaxed">{verdict.excuse}</p>
+          </div>
+
+          <div className="hairline space-y-2 pt-5">
+            <MetaLabel>{t.verdict.followUp}</MetaLabel>
+            <p className="text-sm">{verdict.followUp}</p>
+          </div>
+
+          <div className="hairline space-y-2 pt-5">
+            <div className="flex items-baseline justify-between">
+              <MetaLabel>{t.verdict.risk}</MetaLabel>
+              <span className="font-mono text-lg">{verdict.risk}%</span>
+            </div>
+            <RiskBar value={verdict.risk} />
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.12em]">
+              {riskParts[0]}
+            </p>
+            {riskParts.length > 1 ? (
+              <p className="text-sm text-muted-foreground">{riskParts.slice(1).join(" · ")}</p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">{t.verdict.riskDisclaimer}</p>
+          </div>
+
+          <div className="hairline grid gap-5 pt-5 sm:grid-cols-2">
+            <div>
+              <MetaLabel>{t.verdict.weakness}</MetaLabel>
+              <p className="mt-2 text-sm leading-relaxed">{verdict.weakness}</p>
+            </div>
+            <div className="sm:border-l sm:border-divider sm:pl-5">
+              <MetaLabel>{t.verdict.repair}</MetaLabel>
+              <p className="mt-2 text-sm leading-relaxed">{verdict.repair}</p>
+            </div>
+          </div>
+
+          <div className="hairline space-y-3 pt-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              <Button className="w-full sm:w-auto" onClick={onCopy}>
+                {t.verdict.copy}
+              </Button>
+              <Button
+                className="w-full sm:w-auto"
+                variant="outline"
+                onClick={() => setEscalatingTo(nextAudacity(state.config.audacity))}
+                disabled={maxed || Boolean(escalatingTo)}
+              >
+                {maxed ? t.verdict.limitReached : t.verdict.increaseAudacity}
+              </Button>
+              <Button className="w-full sm:w-auto" variant="ghost" onClick={onNewCase}>
+                {t.verdict.newCase}
+              </Button>
+            </div>
+            {copied !== "idle" && (
+              <p aria-live="polite" className="text-sm text-muted-foreground">
+                {copied === "ok" ? t.verdict.copied : t.verdict.copyError}
+              </p>
+            )}
+            {maxed && (
+              <p className="border-l-2 border-stamp pl-3 text-xs text-muted-foreground">
+                {t.verdict.maxWarning}
+              </p>
+            )}
+          </div>
         </div>
-        {copied !== "idle" && (
-          <p aria-live="polite" className="text-sm text-muted-foreground">
-            {copied === "ok" ? t.verdict.copied : t.verdict.copyError}
-          </p>
-        )}
-        {maxed && <p className="text-xs text-muted-foreground">{t.verdict.maxWarning}</p>}
       </div>
     </Sheet>
   );
