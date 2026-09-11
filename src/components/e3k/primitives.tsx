@@ -25,8 +25,10 @@ export function Button({ variant = "stamp", className, ...props }: ButtonProps) 
         "inline-flex items-center justify-center rounded-sm px-5 py-3 text-sm font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-45",
         variant === "stamp" &&
           "bg-stamp text-stamp-foreground hover:bg-stamp-hover disabled:hover:bg-stamp",
-        variant === "outline" && "border border-divider bg-elevated text-foreground hover:bg-muted",
-        variant === "ghost" && "text-muted-foreground hover:text-foreground",
+        variant === "outline" &&
+          "border border-divider bg-elevated text-foreground hover:bg-muted disabled:hover:bg-elevated",
+        variant === "ghost" &&
+          "text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground",
         className,
       )}
     />
@@ -66,13 +68,13 @@ export function OptionCard({
             selected ? "border-stamp bg-stamp" : "border-divider",
           )}
         />
-        <span>
-          <span className="block font-display text-base leading-snug">{title}</span>
+        <span className="min-w-0">
+          <span className="block break-words font-display text-base leading-snug">{title}</span>
           {subtitle ? (
             <span className="mt-1 block text-sm text-muted-foreground">{subtitle}</span>
           ) : null}
           {status ? (
-            <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-stamp">
+            <span className="mt-2 block break-words font-mono text-[10px] uppercase tracking-[0.14em] text-stamp">
               {status}
             </span>
           ) : null}

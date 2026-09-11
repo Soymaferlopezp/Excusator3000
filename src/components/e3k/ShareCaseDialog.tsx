@@ -264,9 +264,11 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
   const dialogRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const workingRef = useRef(false);
   const [feedback, setFeedback] = useState<"idle" | "shared" | "downloaded" | "copied" | "error">(
     "idle",
   );
+  const [working, setWorking] = useState<"idle" | "share" | "download">("idle");
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -317,6 +319,9 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
   }, [extract, strings, theme]);
 
   const downloadImage = async () => {
+    if (workingRef.current) return;
+    workingRef.current = true;
+    setWorking("download");
     try {
       const blob = await renderCaseImage(extract, strings, theme);
       const url = URL.createObjectURL(blob);
@@ -330,10 +335,16 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
       setFeedback("downloaded");
     } catch {
       setFeedback("error");
+    } finally {
+      workingRef.current = false;
+      setWorking("idle");
     }
   };
 
   const shareCase = async () => {
+    if (workingRef.current) return;
+    workingRef.current = true;
+    setWorking("share");
     const text = shareText(extract, strings);
     try {
       if (navigator.share) {
@@ -361,6 +372,9 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
         return;
       }
       setFeedback("error");
+    } finally {
+      workingRef.current = false;
+      setWorking("idle");
     }
   };
 
@@ -383,11 +397,12 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-case-title"
+        aria-busy={working !== "idle"}
         tabIndex={-1}
         className="paper-sheet mx-auto w-full max-w-3xl p-4 outline-none sm:p-6"
       >
-        <div className="mb-4 flex items-center justify-between gap-4 border-b border-divider pb-3">
-          <h2 id="share-case-title" className="font-display text-xl sm:text-2xl">
+        <div className="mb-4 flex items-start justify-between gap-3 border-b border-divider pb-3 sm:gap-4">
+          <h2 id="share-case-title" className="min-w-0 font-display text-lg sm:text-2xl">
             {strings.title}
           </h2>
           <Button variant="ghost" onClick={onClose}>
@@ -407,10 +422,15 @@ export function ShareCaseDialog({ extract, strings, theme, onClose }: ShareCaseD
         </div>
 
         <div className="mt-5 flex flex-col gap-2 border-t border-divider pt-4 sm:flex-row sm:flex-wrap">
-          <Button className="w-full sm:w-auto" onClick={shareCase}>
+          <Button className="w-full sm:w-auto" onClick={shareCase} disabled={working !== "idle"}>
             {strings.share}
           </Button>
-          <Button className="w-full sm:w-auto" variant="outline" onClick={downloadImage}>
+          <Button
+            className="w-full sm:w-auto"
+            variant="outline"
+            onClick={downloadImage}
+            disabled={working !== "idle"}
+          >
             {strings.download}
           </Button>
           <Button className="w-full sm:w-auto" variant="ghost" onClick={onClose}>

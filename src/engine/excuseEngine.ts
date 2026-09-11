@@ -69,10 +69,10 @@ export function riskStatus(risk: number, content: LocaleContent): string {
 }
 
 const FORBIDDEN =
-  /\b(muert\w+|falleci\w+|c[áa]ncer|hospital\w*|enferm\w+ grave|accidente|polic[íi]a|denuncia|abogad\w+|demanda|falsific\w+|certificad\w+ m[ée]dic\w+|receta|fraude|estafa|robo|death|died|dying|cancer|hospital|ambulance|accident|police|lawsuit|forge|fake (doctor|medical|police)|morte|morreu|c[âa]ncer|pol[íi]cia|acidente|fraude|falsific\w+)\b/i;
+  /\b(muert\w+|muri[óo]\w*|falleci[óo]\w*|c[áa]ncer|hospital\w*|enferm\w+ grave|accidente|polic[íi]a|denuncia|abogad\w+|demanda|falsific\w+|certificad\w+ m[ée]dic\w+|receta|fraude|estafa|robo|death|died|dying|cancer|hospital|ambulance|accident|police|lawsuit|forge|fake (doctor|medical|police)|morte|morreu|c[âa]ncer|pol[íi]cia|acidente|fraude|falsific\w+)\b/i;
 
 export function isHarmfulContext(context: string): boolean {
-  return FORBIDDEN.test(context);
+  return FORBIDDEN.test(normalizeContext(context));
 }
 
 const PROTECTED_CHARACTERISTICS = [

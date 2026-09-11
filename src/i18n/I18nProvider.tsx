@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { STRINGS, type UIStrings } from "./strings";
 import { getContent } from "@/engine/excuseEngine";
 import type { Locale, LocaleContent } from "@/engine/types";
@@ -20,12 +28,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("es");
 
   useEffect(() => {
+    let initial: Locale = "es";
     try {
       const stored = localStorage.getItem(KEY) as Locale | null;
-      if (stored && LOCALES.includes(stored)) setLocaleState(stored);
+      if (stored && LOCALES.includes(stored)) initial = stored;
     } catch {
       /* persistence optional */
     }
+    setLocaleState(initial);
+    document.documentElement.lang = initial === "pt-BR" ? "pt-BR" : initial;
   }, []);
 
   const setLocale = useCallback((l: Locale) => {
@@ -41,7 +52,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<I18nValue>(
-    () => ({ locale, setLocale, t: STRINGS[locale], content: getContent(locale), locales: LOCALES }),
+    () => ({
+      locale,
+      setLocale,
+      t: STRINGS[locale],
+      content: getContent(locale),
+      locales: LOCALES,
+    }),
     [locale, setLocale],
   );
 

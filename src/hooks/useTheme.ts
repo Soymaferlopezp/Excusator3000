@@ -21,11 +21,13 @@ export function useTheme() {
     }
     setThemeState(initial);
     document.documentElement.classList.toggle("dark", initial === "dark");
+    document.documentElement.style.colorScheme = initial;
   }, []);
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
     document.documentElement.classList.toggle("dark", next === "dark");
+    document.documentElement.style.colorScheme = next;
     try {
       localStorage.setItem(KEY, next);
     } catch {

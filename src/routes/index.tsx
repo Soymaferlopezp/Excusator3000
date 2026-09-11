@@ -91,6 +91,15 @@ function Index() {
   const [qIndex, setQIndex] = useState(0);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [copied, setCopied] = useState<"idle" | "ok" | "error">("idle");
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copying = useRef(false);
+
+  useEffect(
+    () => () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    },
+    [],
+  );
 
   const questions = useMemo(
     () => (state.category ? content.questions[state.category] : []),
@@ -142,14 +151,18 @@ function Index() {
   };
 
   const copyExcuse = async () => {
-    if (!verdict) return;
+    if (!verdict || copying.current) return;
+    copying.current = true;
     try {
       await navigator.clipboard.writeText(verdict.excuse);
       setCopied("ok");
     } catch {
       setCopied("error");
+    } finally {
+      copying.current = false;
     }
-    setTimeout(() => setCopied("idle"), 2600);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied("idle"), 2600);
   };
 
   return (
@@ -635,7 +648,7 @@ function VerdictScreen({
         onIncrease();
         setEscalatingTo(null);
       },
-      reduced ? 120 : 900,
+      reduced ? 520 : 900,
     );
     return () => clearTimeout(timer);
   }, [escalatingTo, onIncrease, reduced]);
@@ -647,7 +660,7 @@ function VerdictScreen({
         onVariant();
         setVariantPending(false);
       },
-      reduced ? 320 : 650,
+      reduced ? 500 : 650,
     );
     return () => clearTimeout(timer);
   }, [onVariant, reduced, variantPending]);
@@ -659,8 +672,8 @@ function VerdictScreen({
           <MetaLabel>{t.verdict.tribunal}</MetaLabel>
           <Stamp>{t.verdict.refusalStamp}</Stamp>
         </div>
-        <h1 className="font-display text-3xl">{verdict.refusal.title}</h1>
-        <p className="text-muted-foreground">{verdict.refusal.body}</p>
+        <h1 className="break-words font-display text-3xl">{verdict.refusal.title}</h1>
+        <p className="break-words text-muted-foreground">{verdict.refusal.body}</p>
         <div className="hairline pt-5">
           <Button onClick={onNewCase}>{t.verdict.newCase}</Button>
         </div>
@@ -722,12 +735,12 @@ function VerdictScreen({
           <div className="result-reveal-body space-y-6">
             <div className="hairline space-y-2 pt-5">
               <MetaLabel>{t.verdict.authorizedExcuse}</MetaLabel>
-              <p className="text-lg leading-relaxed">{verdict.excuse}</p>
+              <p className="break-words text-lg leading-relaxed">{verdict.excuse}</p>
             </div>
 
             <div className="hairline space-y-2 pt-5">
               <MetaLabel>{t.verdict.followUp}</MetaLabel>
-              <p className="text-sm">{verdict.followUp}</p>
+              <p className="break-words text-sm">{verdict.followUp}</p>
             </div>
 
             <div className="hairline space-y-2 pt-5">
@@ -748,11 +761,11 @@ function VerdictScreen({
             <div className="hairline grid gap-5 pt-5 sm:grid-cols-2">
               <div>
                 <MetaLabel>{t.verdict.weakness}</MetaLabel>
-                <p className="mt-2 text-sm leading-relaxed">{verdict.weakness}</p>
+                <p className="mt-2 break-words text-sm leading-relaxed">{verdict.weakness}</p>
               </div>
               <div className="sm:border-l sm:border-divider sm:pl-5">
                 <MetaLabel>{t.verdict.repair}</MetaLabel>
-                <p className="mt-2 text-sm leading-relaxed">{verdict.repair}</p>
+                <p className="mt-2 break-words text-sm leading-relaxed">{verdict.repair}</p>
               </div>
             </div>
 
