@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/e3k/Header";
 import { Button, MetaLabel, OptionCard, RiskBar, Sheet, Stamp } from "@/components/e3k/primitives";
 import {
+  ShareCaseDialog,
+  type PublicCaseExtract,
+  type ShareCardTheme,
+} from "@/components/e3k/ShareCaseDialog";
+import {
   generateVerdict,
   isMaxAudacity,
   newCaseId,
@@ -123,6 +128,19 @@ function Index() {
     setVerdict(generateVerdict({ state: next, locale, audacity: level }));
   };
 
+  const generateVariant = () => {
+    if (!verdict) return;
+    setCopied("idle");
+    setVerdict(
+      generateVerdict({
+        state,
+        locale,
+        excludeCandidateId: verdict.candidateId,
+        excludeConceptId: verdict.conceptId,
+      }),
+    );
+  };
+
   const copyExcuse = async () => {
     if (!verdict) return;
     try {
@@ -205,6 +223,7 @@ function Index() {
             copied={copied}
             reduced={reduced}
             onCopy={copyExcuse}
+            onVariant={generateVariant}
             onIncrease={increaseAudacity}
             onNewCase={newCase}
           />
@@ -565,6 +584,7 @@ function VerdictScreen({
   copied,
   reduced,
   onCopy,
+  onVariant,
   onIncrease,
   onNewCase,
 }: {
@@ -573,12 +593,16 @@ function VerdictScreen({
   copied: "idle" | "ok" | "error";
   reduced: boolean;
   onCopy: () => void;
+  onVariant: () => void;
   onIncrease: () => void;
   onNewCase: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, content } = useI18n();
   const maxed = isMaxAudacity(state.config.audacity);
   const [escalatingTo, setEscalatingTo] = useState<Audacity | null>(null);
+  const [variantPending, setVariantPending] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareTheme, setShareTheme] = useState<ShareCardTheme>("light");
   const riskParts = verdict.riskStatus.split(" · ");
   const resultStamp = pickCaseCopy(
     t.verdict.stamps[state.config.audacity],
@@ -588,6 +612,21 @@ function VerdictScreen({
   const escalationMessage = escalatingTo
     ? pickCaseCopy(t.verdict.escalation[escalatingTo], verdict.caseId, escalatingTo)
     : "";
+  const variantMessage = pickCaseCopy(t.verdict.variantTransition, verdict.resultId, "variant");
+  const publicExtract: PublicCaseExtract = {
+    caseId: verdict.caseId,
+    tribunal: t.verdict.tribunal,
+    category: content.categories[state.category ?? "familia"].label,
+    audacity: t.options.audacity[state.config.audacity],
+    stamp: resultStamp,
+    verdict: verdict.verdict,
+    excuse: verdict.excuse,
+    risk: verdict.risk,
+    riskStatus: riskParts[0] ?? "",
+    punchline:
+      riskParts.slice(1).join(" · ") ||
+      pickCaseCopy(t.share.punchlines, verdict.caseId, verdict.resultId),
+  };
 
   useEffect(() => {
     if (!escalatingTo) return;
@@ -600,6 +639,18 @@ function VerdictScreen({
     );
     return () => clearTimeout(timer);
   }, [escalatingTo, onIncrease, reduced]);
+
+  useEffect(() => {
+    if (!variantPending) return;
+    const timer = setTimeout(
+      () => {
+        onVariant();
+        setVariantPending(false);
+      },
+      reduced ? 320 : 650,
+    );
+    return () => clearTimeout(timer);
+  }, [onVariant, reduced, variantPending]);
 
   if (verdict.refused && verdict.refusal) {
     return (
@@ -617,110 +668,155 @@ function VerdictScreen({
     );
   }
 
+  const busy = Boolean(escalatingTo) || variantPending;
+
   return (
-    <Sheet className="relative overflow-hidden">
-      {escalatingTo ? (
+    <>
+      <Sheet className="relative overflow-hidden">
+        {escalatingTo ? (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-paper/95 px-5 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <Stamp>
+              {pickCaseCopy(t.verdict.stamps[escalatingTo], verdict.caseId, escalatingTo)}
+            </Stamp>
+            <p className="animate-fade max-w-md font-display text-xl sm:text-2xl">
+              {escalationMessage}
+            </p>
+          </div>
+        ) : variantPending ? (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-paper/95 px-5 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <MetaLabel>{t.verdict.variant}</MetaLabel>
+            <p className="animate-fade max-w-md font-display text-xl sm:text-2xl">
+              {variantMessage}
+            </p>
+          </div>
+        ) : null}
+
         <div
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-paper/95 px-5 text-center"
-          role="status"
-          aria-live="polite"
+          key={verdict.resultId}
+          aria-busy={busy}
+          className={`space-y-6 ${busy ? "opacity-20" : "animate-verdict-reveal"}`}
         >
-          <Stamp>
-            {pickCaseCopy(t.verdict.stamps[escalatingTo], verdict.caseId, escalatingTo)}
-          </Stamp>
-          <p className="animate-fade max-w-md font-display text-xl sm:text-2xl">
-            {escalationMessage}
-          </p>
-        </div>
-      ) : null}
-
-      <div
-        key={verdict.resultId}
-        aria-busy={Boolean(escalatingTo)}
-        className={`space-y-6 ${escalatingTo ? "opacity-20" : "animate-verdict-reveal"}`}
-      >
-        <div className="result-reveal-meta flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <MetaLabel>{t.verdict.tribunal}</MetaLabel>
-            <p className="label-meta mt-1">
-              {t.verdict.file} {verdict.caseId} · {t.verdict.audacityLabel}:{" "}
-              {t.options.audacity[state.config.audacity]}
-            </p>
-          </div>
-          <Stamp>{resultStamp}</Stamp>
-        </div>
-
-        <h1 className="result-reveal-verdict break-words font-display text-2xl sm:text-3xl">
-          {verdict.verdict}
-        </h1>
-
-        <div className="result-reveal-body space-y-6">
-          <div className="hairline space-y-2 pt-5">
-            <MetaLabel>{t.verdict.authorizedExcuse}</MetaLabel>
-            <p className="text-lg leading-relaxed">{verdict.excuse}</p>
-          </div>
-
-          <div className="hairline space-y-2 pt-5">
-            <MetaLabel>{t.verdict.followUp}</MetaLabel>
-            <p className="text-sm">{verdict.followUp}</p>
-          </div>
-
-          <div className="hairline space-y-2 pt-5">
-            <div className="flex items-baseline justify-between">
-              <MetaLabel>{t.verdict.risk}</MetaLabel>
-              <span className="font-mono text-lg">{verdict.risk}%</span>
-            </div>
-            <RiskBar value={verdict.risk} />
-            <p className="font-mono text-xs font-medium uppercase tracking-[0.12em]">
-              {riskParts[0]}
-            </p>
-            {riskParts.length > 1 ? (
-              <p className="text-sm text-muted-foreground">{riskParts.slice(1).join(" · ")}</p>
-            ) : null}
-            <p className="text-xs text-muted-foreground">{t.verdict.riskDisclaimer}</p>
-          </div>
-
-          <div className="hairline grid gap-5 pt-5 sm:grid-cols-2">
+          <div className="result-reveal-meta flex flex-wrap items-start justify-between gap-4">
             <div>
-              <MetaLabel>{t.verdict.weakness}</MetaLabel>
-              <p className="mt-2 text-sm leading-relaxed">{verdict.weakness}</p>
+              <MetaLabel>{t.verdict.tribunal}</MetaLabel>
+              <p className="label-meta mt-1">
+                {t.verdict.file} {verdict.caseId} · {t.verdict.audacityLabel}:{" "}
+                {t.options.audacity[state.config.audacity]}
+              </p>
             </div>
-            <div className="sm:border-l sm:border-divider sm:pl-5">
-              <MetaLabel>{t.verdict.repair}</MetaLabel>
-              <p className="mt-2 text-sm leading-relaxed">{verdict.repair}</p>
-            </div>
+            <Stamp>{resultStamp}</Stamp>
           </div>
 
-          <div className="hairline space-y-3 pt-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-              <Button className="w-full sm:w-auto" onClick={onCopy}>
-                {t.verdict.copy}
-              </Button>
-              <Button
-                className="w-full sm:w-auto"
-                variant="outline"
-                onClick={() => setEscalatingTo(nextAudacity(state.config.audacity))}
-                disabled={maxed || Boolean(escalatingTo)}
-              >
-                {maxed ? t.verdict.limitReached : t.verdict.increaseAudacity}
-              </Button>
-              <Button className="w-full sm:w-auto" variant="ghost" onClick={onNewCase}>
-                {t.verdict.newCase}
-              </Button>
+          <h1 className="result-reveal-verdict break-words font-display text-2xl sm:text-3xl">
+            {verdict.verdict}
+          </h1>
+
+          <div className="result-reveal-body space-y-6">
+            <div className="hairline space-y-2 pt-5">
+              <MetaLabel>{t.verdict.authorizedExcuse}</MetaLabel>
+              <p className="text-lg leading-relaxed">{verdict.excuse}</p>
             </div>
-            {copied !== "idle" && (
-              <p aria-live="polite" className="text-sm text-muted-foreground">
-                {copied === "ok" ? t.verdict.copied : t.verdict.copyError}
+
+            <div className="hairline space-y-2 pt-5">
+              <MetaLabel>{t.verdict.followUp}</MetaLabel>
+              <p className="text-sm">{verdict.followUp}</p>
+            </div>
+
+            <div className="hairline space-y-2 pt-5">
+              <div className="flex items-baseline justify-between">
+                <MetaLabel>{t.verdict.risk}</MetaLabel>
+                <span className="font-mono text-lg">{verdict.risk}%</span>
+              </div>
+              <RiskBar value={verdict.risk} />
+              <p className="font-mono text-xs font-medium uppercase tracking-[0.12em]">
+                {riskParts[0]}
               </p>
-            )}
-            {maxed && (
-              <p className="border-l-2 border-stamp pl-3 text-xs text-muted-foreground">
-                {t.verdict.maxWarning}
-              </p>
-            )}
+              {riskParts.length > 1 ? (
+                <p className="text-sm text-muted-foreground">{riskParts.slice(1).join(" · ")}</p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">{t.verdict.riskDisclaimer}</p>
+            </div>
+
+            <div className="hairline grid gap-5 pt-5 sm:grid-cols-2">
+              <div>
+                <MetaLabel>{t.verdict.weakness}</MetaLabel>
+                <p className="mt-2 text-sm leading-relaxed">{verdict.weakness}</p>
+              </div>
+              <div className="sm:border-l sm:border-divider sm:pl-5">
+                <MetaLabel>{t.verdict.repair}</MetaLabel>
+                <p className="mt-2 text-sm leading-relaxed">{verdict.repair}</p>
+              </div>
+            </div>
+
+            <div className="hairline space-y-3 pt-5">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button className="w-full" onClick={onCopy} disabled={busy}>
+                  {t.verdict.copy}
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setEscalatingTo(nextAudacity(state.config.audacity))}
+                  disabled={maxed || busy}
+                >
+                  {maxed ? t.verdict.limitReached : t.verdict.increaseAudacity}
+                </Button>
+              </div>
+              <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:justify-center">
+                <Button
+                  className="text-foreground"
+                  variant="ghost"
+                  onClick={() => setVariantPending(true)}
+                  disabled={busy}
+                >
+                  {t.verdict.variant}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShareTheme(
+                      document.documentElement.classList.contains("dark") ? "dark" : "light",
+                    );
+                    setShareOpen(true);
+                  }}
+                  disabled={busy}
+                >
+                  {t.verdict.share}
+                </Button>
+                <Button className="text-xs" variant="ghost" onClick={onNewCase} disabled={busy}>
+                  {t.verdict.newCase}
+                </Button>
+              </div>
+              {copied !== "idle" && (
+                <p aria-live="polite" className="text-sm text-muted-foreground">
+                  {copied === "ok" ? t.verdict.copied : t.verdict.copyError}
+                </p>
+              )}
+              {maxed && (
+                <p className="border-l-2 border-stamp pl-3 text-xs text-muted-foreground">
+                  {t.verdict.maxWarning}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </Sheet>
+      </Sheet>
+      {shareOpen ? (
+        <ShareCaseDialog
+          extract={publicExtract}
+          strings={t.share}
+          theme={shareTheme}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }

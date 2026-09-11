@@ -37,11 +37,13 @@ export function OptionCard({
   selected,
   title,
   subtitle,
+  status,
   onClick,
 }: {
   selected: boolean;
   title: string;
   subtitle?: string;
+  status?: string;
   onClick: () => void;
 }) {
   return (
@@ -69,6 +71,11 @@ export function OptionCard({
           {subtitle ? (
             <span className="mt-1 block text-sm text-muted-foreground">{subtitle}</span>
           ) : null}
+          {status ? (
+            <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-stamp">
+              {status}
+            </span>
+          ) : null}
         </span>
       </span>
     </button>
@@ -88,7 +95,7 @@ export function RiskBar({ value }: { value: number }) {
 
 export function Stamp({ children }: { children: ReactNode }) {
   return (
-    <span className="animate-stamp inline-block rounded-sm border-[3px] border-stamp px-4 py-2 font-mono text-sm font-medium uppercase tracking-[0.22em] text-stamp">
+    <span className="animate-stamp inline-block max-w-full break-words rounded-sm border-[3px] border-stamp px-3 py-2 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-stamp sm:px-4 sm:text-sm sm:tracking-[0.22em]">
       {children}
     </span>
   );

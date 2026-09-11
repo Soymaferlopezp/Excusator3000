@@ -109,6 +109,9 @@ export interface GenerateOptions {
   locale: Locale;
   /** Force a specific audacity (used by "increase audacity"). */
   audacity?: Audacity;
+  /** Prefer another result without changing the case configuration. */
+  excludeCandidateId?: string;
+  excludeConceptId?: string;
   /** Injectable for deterministic engine tests. */
   random?: () => number;
 }
@@ -275,6 +278,8 @@ export function generateVerdict({
   state,
   locale,
   audacity,
+  excludeCandidateId,
+  excludeConceptId,
   random = Math.random,
 }: GenerateOptions): Verdict {
   const content = getContent(locale);
@@ -339,17 +344,15 @@ export function generateVerdict({
   const signals = resolveSignals(state, content, category);
   const recentIds = getRecent("excuse", scope);
   const recentConcepts = getRecent("concept", scope);
-  const continuingConcept = getRecent("concept", `${scope}:${state.caseId}`)[0];
+  const continuingConcept = excludeConceptId
+    ? undefined
+    : getRecent("concept", `${scope}:${state.caseId}`)[0];
   const scored = pool.map((block) => ({
     block,
-    score: scoreCandidate(
-      block,
-      signals,
-      effectiveState,
-      recentIds,
-      recentConcepts,
-      continuingConcept,
-    ),
+    score:
+      scoreCandidate(block, signals, effectiveState, recentIds, recentConcepts, continuingConcept) -
+      (block.id === excludeCandidateId ? 1000 : 0) -
+      (block.conceptId && block.conceptId === excludeConceptId ? 40 : 0),
   }));
   const best = Math.max(...scored.map((item) => item.score));
   const finalists = scored.filter((item) => item.score >= best - 4).map((item) => item.block);
@@ -388,6 +391,8 @@ export function generateVerdict({
 
   return {
     resultId: `${block.id}-${Date.now()}`,
+    candidateId: block.id,
+    conceptId: block.conceptId,
     caseId: state.caseId,
     verdict: verdict?.v ?? content.verdicts[0] ?? "",
     excuse,

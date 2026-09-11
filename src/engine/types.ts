@@ -146,6 +146,9 @@ export interface CaseState {
 
 export interface Verdict {
   resultId: string;
+  /** Internal selection metadata used for same-level variants and escalation continuity. */
+  candidateId?: string;
+  conceptId?: string;
   caseId: string;
   verdict: string;
   excuse: string;

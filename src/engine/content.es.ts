@@ -13,7 +13,7 @@ const q = (
 const confirmado = q("confirmado", "¿Ya cometiste el error de confirmar asistencia?", [
   ["No. Mi libertad aún consta en actas.", -8],
   [
-    "Respondí «vemos». Mis abogados sostienen que eso no equivale a confirmar.",
+    "Respondí «vamos». Mis abogados sostienen que eso no equivale a confirmar.",
     4,
     ["alreadyConfirmed"],
   ],

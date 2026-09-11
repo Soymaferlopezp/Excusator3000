@@ -1,4 +1,4 @@
-import type { Locale } from "@/engine/types";
+import type { Audacity, Locale } from "@/engine/types";
 
 export interface UIStrings {
   brandSubtitle: string;
@@ -49,13 +49,16 @@ export interface UIStrings {
   };
   interrogation: {
     label: string;
+    question: string;
+    registered: string;
+    contextTitle: string;
     contextLabel: string;
     contextPlaceholder: string;
     contextWarning: string;
     cta: string;
     back: string;
   };
-  deliberation: { skip: string; stamp: string };
+  deliberation: { skip: string; stamp: string; session: string };
   verdict: {
     tribunal: string;
     file: string;
@@ -76,14 +79,29 @@ export interface UIStrings {
     share: string;
     newCase: string;
     audacityLabel: string;
+    stamps: Record<Audacity, string[]>;
+    escalation: Record<"valiente" | "sin_retorno", string[]>;
+    variantTransition: string[];
+    limitReached: string;
+    refusalStamp: string;
   };
   share: {
     title: string;
+    caseLabel: string;
+    categoryLabel: string;
+    audacityLabel: string;
+    verdictLabel: string;
+    excuseLabel: string;
+    riskLabel: string;
     close: string;
     share: string;
     download: string;
+    shared: string;
+    downloaded: string;
     copiedText: string;
+    shareError: string;
     tagline: string;
+    punchlines: string[];
   };
   common: { back: string; step: string };
 }
@@ -142,14 +160,22 @@ const es: UIStrings = {
     relationship: { formal: "Formal", cercana: "Cercana", confianza: "Demasiada confianza" },
   },
   interrogation: {
-    label: "Interrogatorio",
-    contextLabel: "Contexto adicional, si desea incriminarse",
+    label: "Interrogatorio preliminar",
+    question: "Pregunta",
+    registered: "Declaración incorporada al expediente",
+    contextTitle: "Anexo voluntario",
+    contextLabel: "¿Algo más que el tribunal deba saber?",
     contextPlaceholder: "Ej.: confirmé una cena familiar y descubrí que juega mi equipo…",
-    contextWarning: "El tribunal recomienda no incriminarse con nombres completos.",
+    contextWarning:
+      "No incluyas nombres ni información sensible. El tribunal ya tiene suficientes problemas.",
     cta: "Solicitar deliberación",
     back: "Volver",
   },
-  deliberation: { skip: "Saltar deliberación", stamp: "Caso resuelto" },
+  deliberation: {
+    skip: "Saltar deliberación",
+    stamp: "Caso resuelto",
+    session: "Sesión reservada del tribunal",
+  },
   verdict: {
     tribunal: "Tribunal de Compromisos Sociales",
     file: "Expediente",
@@ -158,10 +184,10 @@ const es: UIStrings = {
     followUp: "Si preguntan “¿pero qué pasó?”",
     risk: "Riesgo de descubrimiento",
     riskDisclaimer: "Porcentaje orientativo emitido por el Departamento de Cálculos Convenientes.",
-    weakness: "Punto débil del caso",
-    repair: "Reparación recomendada",
+    weakness: "Evidencia en tu contra",
+    repair: "Instrucciones del tribunal",
     copy: "Copiar excusa",
-    copied: "Excusa incorporada al portapapeles. Niega haber estado aquí.",
+    copied: "Copia certificada. Niega haber estado aquí.",
     copyError:
       "El sistema judicial ha perdido el expediente detrás de un archivador. Intenta de nuevo.",
     variant: "Generar variante",
@@ -171,14 +197,59 @@ const es: UIStrings = {
     share: "Compartir expediente",
     newCase: "Nuevo caso",
     audacityLabel: "Descaro",
+    stamps: {
+      prudente: ["Caso admitido", "Defensa autorizada", "Procedimiento regular"],
+      valiente: ["Prudencia revocada", "Apelación concedida", "Criterio flexibilizado"],
+      sin_retorno: [
+        "Bajo su responsabilidad",
+        "Jurisprudencia dudosa",
+        "No consta en actas",
+        "Supervisión revocada",
+      ],
+    },
+    escalation: {
+      valiente: [
+        "Reabriendo expediente por falta de prudencia…",
+        "Solicitando criterios sospechosamente flexibles…",
+      ],
+      sin_retorno: [
+        "Prudencia revocada. Retirando supervisión adulta…",
+        "Elevando el caso a una autoridad que no existe…",
+        "Archivando las últimas objeciones sensatas…",
+      ],
+    },
+    variantTransition: [
+      "Solicitando una segunda versión de los hechos…",
+      "Reasignando el expediente a otro funcionario…",
+      "Buscando una coartada con distinta jurisprudencia…",
+      "Consultando una versión convenientemente alternativa…",
+    ],
+    limitReached: "Límite institucional alcanzado",
+    refusalStamp: "Expediente inadmisible",
   },
   share: {
-    title: "Tarjeta del expediente",
+    title: "Extracto público del expediente",
+    caseLabel: "Expediente",
+    categoryLabel: "Categoría",
+    audacityLabel: "Descaro",
+    verdictLabel: "Dictamen",
+    excuseLabel: "Excusa autorizada",
+    riskLabel: "Riesgo de descubrimiento",
     close: "Cerrar",
     share: "Compartir",
-    download: "Descargar tarjeta",
-    copiedText: "Expediente copiado. El tribunal no ha visto nada.",
+    download: "Descargar imagen",
+    shared: "Expediente puesto en circulación.",
+    downloaded: "Copia del expediente sustraída correctamente.",
+    copiedText: "Documento comprometedor incorporado al portapapeles.",
+    shareError: "El archivo se resistió a salir del tribunal. Intenta de nuevo.",
     tagline: "No garantizamos absolución.",
+    punchlines: [
+      "Fuente: de los deseos.",
+      "Fuente: de los deseos.",
+      "Documento no verificado por ninguna autoridad competente.",
+      "Validez jurídica: ninguna.",
+      "Departamento de Cálculos Convenientes.",
+    ],
   },
   common: { back: "Volver", step: "Etapa" },
 };
@@ -237,14 +308,21 @@ const en: UIStrings = {
     relationship: { formal: "Formal", cercana: "Close", confianza: "Far too comfortable" },
   },
   interrogation: {
-    label: "Interrogation",
+    label: "Preliminary interrogation",
+    question: "Question",
+    registered: "Statement entered into the case file",
+    contextTitle: "Voluntary appendix",
     contextLabel: "Additional context, should you wish to incriminate yourself",
     contextPlaceholder: "E.g. I confirmed a family dinner and then found out my team plays…",
     contextWarning: "The tribunal advises against incriminating yourself with full names.",
     cta: "Request deliberation",
     back: "Back",
   },
-  deliberation: { skip: "Skip deliberation", stamp: "Case resolved" },
+  deliberation: {
+    skip: "Skip deliberation",
+    stamp: "Case resolved",
+    session: "Closed session of the tribunal",
+  },
   verdict: {
     tribunal: "Tribunal of Social Commitments",
     file: "Case file",
@@ -265,14 +343,44 @@ const en: UIStrings = {
     share: "Share case file",
     newCase: "New case",
     audacityLabel: "Nerve",
+    stamps: {
+      prudente: ["Final ruling"],
+      valiente: ["Final ruling"],
+      sin_retorno: ["Final ruling"],
+    },
+    escalation: {
+      valiente: ["Reopening the file with reduced caution…"],
+      sin_retorno: ["Escalating beyond institutional supervision…"],
+    },
+    variantTransition: [
+      "Requesting a second version of events…",
+      "Reassigning the file to another clerk…",
+    ],
+    limitReached: "Institutional limit reached",
+    refusalStamp: "File inadmissible",
   },
   share: {
-    title: "Case card",
+    title: "Public case extract",
+    caseLabel: "Case file",
+    categoryLabel: "Category",
+    audacityLabel: "Nerve",
+    verdictLabel: "Ruling",
+    excuseLabel: "Authorised excuse",
+    riskLabel: "Discovery risk",
     close: "Close",
     share: "Share",
-    download: "Download card",
-    copiedText: "Case file copied. The tribunal saw nothing.",
+    download: "Download image",
+    shared: "Case file placed into circulation.",
+    downloaded: "Case-file copy successfully removed.",
+    copiedText: "Compromising document copied to the clipboard.",
+    shareError: "The file refused to leave the tribunal. Try again.",
     tagline: "Acquittal not guaranteed.",
+    punchlines: [
+      "Source: wishful thinking.",
+      "Source: wishful thinking.",
+      "Not verified by any competent authority.",
+      "Legal validity: none.",
+    ],
   },
   common: { back: "Back", step: "Stage" },
 };
@@ -331,14 +439,21 @@ const pt: UIStrings = {
     relationship: { formal: "Formal", cercana: "Próxima", confianza: "Intimidade excessiva" },
   },
   interrogation: {
-    label: "Interrogatório",
+    label: "Interrogatório preliminar",
+    question: "Pergunta",
+    registered: "Declaração incorporada ao processo",
+    contextTitle: "Anexo voluntário",
     contextLabel: "Contexto adicional, caso queira se incriminar",
     contextPlaceholder: "Ex.: confirmei um jantar de família e descobri que meu time joga…",
     contextWarning: "O tribunal recomenda não se incriminar com nomes completos.",
     cta: "Solicitar deliberação",
     back: "Voltar",
   },
-  deliberation: { skip: "Pular deliberação", stamp: "Caso resolvido" },
+  deliberation: {
+    skip: "Pular deliberação",
+    stamp: "Caso resolvido",
+    session: "Sessão reservada do tribunal",
+  },
   verdict: {
     tribunal: "Tribunal de Compromissos Sociais",
     file: "Processo",
@@ -359,14 +474,44 @@ const pt: UIStrings = {
     share: "Compartilhar processo",
     newCase: "Novo caso",
     audacityLabel: "Ousadia",
+    stamps: {
+      prudente: ["Resolução definitiva"],
+      valiente: ["Resolução definitiva"],
+      sin_retorno: ["Resolução definitiva"],
+    },
+    escalation: {
+      valiente: ["Reabrindo o processo com menos prudência…"],
+      sin_retorno: ["Elevando o caso além da supervisão institucional…"],
+    },
+    variantTransition: [
+      "Solicitando uma segunda versão dos fatos…",
+      "Reatribuindo o processo a outro funcionário…",
+    ],
+    limitReached: "Limite institucional alcançado",
+    refusalStamp: "Processo inadmissível",
   },
   share: {
-    title: "Cartão do processo",
+    title: "Extrato público do processo",
+    caseLabel: "Processo",
+    categoryLabel: "Categoria",
+    audacityLabel: "Ousadia",
+    verdictLabel: "Decisão",
+    excuseLabel: "Desculpa autorizada",
+    riskLabel: "Risco de descoberta",
     close: "Fechar",
     share: "Compartilhar",
-    download: "Baixar cartão",
-    copiedText: "Processo copiado. O tribunal não viu nada.",
+    download: "Baixar imagem",
+    shared: "Processo colocado em circulação.",
+    downloaded: "Cópia do processo retirada com sucesso.",
+    copiedText: "Documento comprometedor copiado para a área de transferência.",
+    shareError: "O arquivo se recusou a sair do tribunal. Tente novamente.",
     tagline: "Não garantimos absolvição.",
+    punchlines: [
+      "Fonte: pensamento positivo.",
+      "Fonte: pensamento positivo.",
+      "Documento não verificado por nenhuma autoridade competente.",
+      "Validade jurídica: nenhuma.",
+    ],
   },
   common: { back: "Voltar", step: "Etapa" },
 };
