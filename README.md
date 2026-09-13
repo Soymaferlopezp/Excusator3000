@@ -16,7 +16,7 @@
   <p><em>Every great excuse deserves a fair trial.</em></p>
 
   <p>
-    <a href="https://excusator3000.lovable.app/">Website</a>
+    <a href="https://excusator3000-three.vercel.app/">Website</a>
     ·
     <a href="VIDEO_DEMO_URL">Video Demo — URL pending</a>
   </p>
@@ -330,8 +330,8 @@ Excusator3000 has an immediately understandable premise, a strong tribunal ident
 
 ## 👥 Team
 
-- [Name / Role]
-- [Name / Role]
+- MaFer López - Developer
+- Mary López - Project Manager 
 
 ## 📄 License
 
