@@ -11,7 +11,7 @@ import { STRINGS, type UIStrings } from "./strings";
 import { getContent } from "@/engine/excuseEngine";
 import type { Locale, LocaleContent } from "@/engine/types";
 
-const LOCALES: Locale[] = ["es", "en", "pt-BR"];
+const LOCALES: Locale[] = ["en", "es"];
 const KEY = "e3k.locale";
 
 interface I18nValue {
@@ -25,10 +25,10 @@ interface I18nValue {
 const I18nContext = createContext<I18nValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("es");
+  const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
-    let initial: Locale = "es";
+    let initial: Locale = "en";
     try {
       const stored = localStorage.getItem(KEY) as Locale | null;
       if (stored && LOCALES.includes(stored)) initial = stored;
@@ -36,7 +36,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       /* persistence optional */
     }
     setLocaleState(initial);
-    document.documentElement.lang = initial === "pt-BR" ? "pt-BR" : initial;
+    document.documentElement.lang = initial;
   }, []);
 
   const setLocale = useCallback((l: Locale) => {
@@ -47,7 +47,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       /* persistence optional */
     }
     if (typeof document !== "undefined") {
-      document.documentElement.lang = l === "pt-BR" ? "pt-BR" : l;
+      document.documentElement.lang = l;
     }
   }, []);
 
@@ -71,4 +71,4 @@ export function useI18n(): I18nValue {
   return ctx;
 }
 
-export const LOCALE_LABELS: Record<Locale, string> = { es: "ES", en: "EN", "pt-BR": "PT" };
+export const LOCALE_LABELS: Record<Locale, string> = { en: "EN", es: "ES" };

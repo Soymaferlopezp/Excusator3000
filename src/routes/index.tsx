@@ -15,6 +15,7 @@ import {
   nextAudacity,
   provisionalCredibility,
 } from "@/engine/excuseEngine";
+import { getScenarioIntentOptions, isScenarioIntentValid } from "@/engine/scenarioIntents";
 import {
   CATEGORIES,
   type Audacity,
@@ -23,25 +24,27 @@ import {
   type Credibility,
   type Drama,
   type Relationship,
+  type ScenarioIntent,
   type Verdict,
 } from "@/engine/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useReducedMotion } from "@/hooks/useTheme";
+import { copyTextToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/")({
   staticData: { sitemap: true },
   head: () => ({
     meta: [
-      { title: "Excusator3000 — Toda gran excusa merece un juicio justo" },
+      { title: "Excusator3000 — Every great excuse deserves a fair trial" },
       {
         name: "description",
         content:
-          "Presenta tu caso ante el Tribunal de Compromisos Sociales y recibe una excusa oficialmente autorizada, con riesgo de descubrimiento incluido.",
+          "Present your case to the Court of Social Commitments and receive an officially authorized excuse, including its risk of discovery.",
       },
-      { property: "og:title", content: "Excusator3000 — Oficina de Excusas Improbables" },
+      { property: "og:title", content: "Excusator3000 — Office of Improbable Excuses" },
       {
         property: "og:description",
-        content: "Presenta tu caso y recibe una excusa oficialmente autorizada.",
+        content: "Present your case and receive an officially authorized excuse.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://excusator3000.lovable.app/" },
@@ -52,7 +55,8 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Step = "home" | "category" | "config" | "interrogation" | "deliberation" | "verdict";
+type Step =
+  "home" | "category" | "config" | "interrogation" | "intent" | "deliberation" | "verdict";
 
 const CREDIBILITIES: Credibility[] = ["sospechosa", "razonable", "impecable"];
 const DRAMAS: Drama[] = ["seco", "cinematografico", "telenovela"];
@@ -71,6 +75,7 @@ function emptyCase(): CaseState {
   return {
     caseId: newCaseId(),
     category: null,
+    scenarioIntent: null,
     config: {
       credibility: "razonable",
       drama: "cinematografico",
@@ -93,6 +98,7 @@ function Index() {
   const [copied, setCopied] = useState<"idle" | "ok" | "error">("idle");
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copying = useRef(false);
+  const verdictLocale = useRef(locale);
 
   useEffect(
     () => () => {
@@ -100,6 +106,28 @@ function Index() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (verdictLocale.current === locale) return;
+    verdictLocale.current = locale;
+    setCopied("idle");
+    const intentIsValid =
+      state.category && isScenarioIntentValid(locale, state.category, state.scenarioIntent);
+    if (state.scenarioIntent && !intentIsValid) {
+      setState((current) => ({ ...current, scenarioIntent: null }));
+      setVerdict(null);
+      if (step === "deliberation" || step === "verdict") setStep("intent");
+      return;
+    }
+    if (!verdict) return;
+    setVerdict(
+      generateVerdict({
+        state,
+        locale,
+        audacity: state.config.audacity,
+      }),
+    );
+  }, [locale, state, step, verdict]);
 
   const questions = useMemo(
     () => (state.category ? content.questions[state.category] : []),
@@ -144,37 +172,45 @@ function Index() {
       generateVerdict({
         state,
         locale,
-        excludeCandidateId: verdict.candidateId,
-        excludeConceptId: verdict.conceptId,
+        ...(verdict.candidateId ? { excludeCandidateId: verdict.candidateId } : {}),
+        ...(verdict.conceptId ? { excludeConceptId: verdict.conceptId } : {}),
       }),
     );
   };
 
   const copyExcuse = async () => {
     if (!verdict || copying.current) return;
+    const text = verdict.excuse.trim();
     copying.current = true;
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = null;
+    setCopied("idle");
+    let didCopy = false;
     try {
-      await navigator.clipboard.writeText(verdict.excuse);
-      setCopied("ok");
-    } catch {
-      setCopied("error");
+      didCopy = await copyTextToClipboard(text);
+      setCopied(didCopy ? "ok" : "error");
     } finally {
       copying.current = false;
     }
-    if (copyTimer.current) clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => setCopied("idle"), 2600);
+    copyTimer.current = didCopy ? setTimeout(() => setCopied("idle"), 2600) : null;
   };
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <Header onHome={newCase} />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         {step === "home" && <HomeScreen onStart={startCase} />}
 
         {step === "category" && (
           <CategoryScreen
             selected={state.category}
-            onSelect={(c) => setState((s) => ({ ...s, category: c }))}
+            onSelect={(c) =>
+              setState((s) => ({
+                ...s,
+                category: c,
+                scenarioIntent: s.category === c ? s.scenarioIntent : null,
+              }))
+            }
             onBack={() => setStep("home")}
             onNext={() => {
               setQIndex(0);
@@ -210,11 +246,26 @@ function Index() {
                   { questionId, optionId, risk },
                 ],
               }));
-              setQIndex((current) => Math.min(current + 1, questions.length));
+              const nextIndex = Math.min(qIndex + 1, questions.length);
+              setQIndex(nextIndex);
+              if (nextIndex === questions.length) setStep("intent");
             }}
-            onContext={(context) => setState((s) => ({ ...s, context }))}
             onBack={() => (qIndex === 0 ? setStep("config") : setQIndex(qIndex - 1))}
-            onSubmit={() => deliberate(state)}
+          />
+        )}
+
+        {step === "intent" && state.category && (
+          <IntentScreen
+            category={state.category}
+            selected={state.scenarioIntent}
+            onSelect={(scenarioIntent) => setState((current) => ({ ...current, scenarioIntent }))}
+            onBack={() => {
+              setQIndex(Math.max(0, questions.length - 1));
+              setStep("interrogation");
+            }}
+            onSubmit={() => {
+              if (state.scenarioIntent) deliberate(state);
+            }}
           />
         )}
 
@@ -425,18 +476,14 @@ function InterrogationScreen({
   index,
   reduced,
   onAnswer,
-  onContext,
   onBack,
-  onSubmit,
 }: {
   state: CaseState;
   questions: ReturnType<typeof useI18n>["content"]["questions"][Category];
   index: number;
   reduced: boolean;
   onAnswer: (questionId: string, optionId: string, risk: number) => void;
-  onContext: (context: string) => void;
   onBack: () => void;
-  onSubmit: () => void;
 }) {
   const { t } = useI18n();
   const question = questions[index];
@@ -471,6 +518,8 @@ function InterrogationScreen({
     );
   };
 
+  if (!question) return null;
+
   return (
     <Sheet className="overflow-hidden p-0 sm:p-0">
       <div className="border-b border-divider px-5 py-5 sm:px-8">
@@ -479,7 +528,7 @@ function InterrogationScreen({
       </div>
 
       <div
-        key={question?.id ?? "context"}
+        key={question.id}
         className={`space-y-6 px-5 py-6 sm:px-8 sm:py-8 ${filingAnswer ? "animate-testimony-file" : pendingOption ? "" : "animate-case-page"}`}
       >
         <div>
@@ -488,58 +537,105 @@ function InterrogationScreen({
               {t.verdict.file} {state.caseId}
             </MetaLabel>
             <MetaLabel>
-              {question
-                ? `${t.interrogation.question} ${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`
-                : t.interrogation.contextTitle}
+              {t.interrogation.question} {String(index + 1).padStart(2, "0")} /{" "}
+              {String(total).padStart(2, "0")}
             </MetaLabel>
           </div>
           <h1 ref={headingRef} tabIndex={-1} className="mt-6 font-display text-2xl sm:text-3xl">
-            {question ? question.text : t.interrogation.contextLabel}
+            {question.text}
           </h1>
         </div>
 
-        {question ? (
-          <div className="space-y-2">
-            {question.options.map((option) => {
-              const answer = state.answers.find((item) => item.questionId === question.id);
-              const registering = pendingOption === option.id;
-              return (
-                <OptionCard
-                  key={option.id}
-                  selected={registering || answer?.optionId === option.id}
-                  status={registering ? t.interrogation.registered : undefined}
-                  title={option.label}
-                  onClick={() => registerAnswer(question.id, option.id, option.risk)}
-                />
-              );
-            })}
-            <span className="sr-only" role="status" aria-live="polite">
-              {pendingOption ? t.interrogation.registered : ""}
-            </span>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <label className="label-meta" htmlFor="context">
-              {t.interrogation.contextTitle}
-            </label>
-            <textarea
-              id="context"
-              rows={4}
-              value={state.context}
-              onChange={(event) => onContext(event.target.value)}
-              placeholder={t.interrogation.contextPlaceholder}
-              className="w-full rounded-sm border border-divider bg-paper p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-stamp"
-            />
-            <p className="text-xs text-muted-foreground">{t.interrogation.contextWarning}</p>
-          </div>
-        )}
+        <div className="space-y-2">
+          {question.options.map((option) => {
+            const answer = state.answers.find((item) => item.questionId === question.id);
+            const registering = pendingOption === option.id;
+            return (
+              <OptionCard
+                key={option.id}
+                selected={registering || answer?.optionId === option.id}
+                {...(registering ? { status: t.interrogation.registered } : {})}
+                title={option.label}
+                onClick={() => registerAnswer(question.id, option.id, option.risk)}
+              />
+            );
+          })}
+          <span className="sr-only" role="status" aria-live="polite">
+            {pendingOption ? t.interrogation.registered : ""}
+          </span>
+        </div>
 
         <div className="hairline flex flex-wrap justify-between gap-3 pt-5">
           <Button variant="ghost" onClick={onBack} disabled={Boolean(pendingOption)}>
             {t.interrogation.back}
           </Button>
-          {!question ? <Button onClick={onSubmit}>{t.interrogation.cta}</Button> : null}
         </div>
+      </div>
+    </Sheet>
+  );
+}
+
+function IntentScreen({
+  category,
+  selected,
+  onSelect,
+  onBack,
+  onSubmit,
+}: {
+  category: Category;
+  selected: ScenarioIntent | null;
+  onSelect: (intent: ScenarioIntent | null) => void;
+  onBack: () => void;
+  onSubmit: () => void;
+}) {
+  const { locale, t } = useI18n();
+  const options = getScenarioIntentOptions(locale, category);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, [locale, category]);
+
+  return (
+    <Sheet>
+      <MetaLabel>{t.intent.label}</MetaLabel>
+      <h1 ref={headingRef} tabIndex={-1} className="mt-2 font-display text-2xl sm:text-3xl">
+        {t.intent.title}
+      </h1>
+      <p id="scenario-intent-help" className="mt-2 text-sm text-muted-foreground">
+        {t.intent.subtitle}
+      </p>
+
+      <div className="mt-6">
+        <label className="sr-only" htmlFor="scenario-intent">
+          {t.intent.title}
+        </label>
+        <select
+          id="scenario-intent"
+          required
+          value={selected ?? ""}
+          aria-describedby="scenario-intent-help"
+          onChange={(event) => onSelect(event.target.value || null)}
+          className="min-h-12 w-full rounded-sm border border-divider bg-paper px-3 py-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+        >
+          <option value="" disabled>
+            {t.intent.placeholder}
+          </option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="hairline mt-6 flex flex-wrap justify-between gap-3 pt-5">
+        <Button variant="ghost" onClick={onBack}>
+          {t.intent.back}
+        </Button>
+        <Button onClick={onSubmit} disabled={!selected}>
+          {t.intent.cta}
+        </Button>
       </div>
     </Sheet>
   );
@@ -616,15 +712,17 @@ function VerdictScreen({
   const [variantPending, setVariantPending] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareTheme, setShareTheme] = useState<ShareCardTheme>("light");
+  const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const riskParts = verdict.riskStatus.split(" · ");
   const resultStamp = pickCaseCopy(
     t.verdict.stamps[state.config.audacity],
     verdict.caseId,
     state.config.audacity,
   );
-  const escalationMessage = escalatingTo
-    ? pickCaseCopy(t.verdict.escalation[escalatingTo], verdict.caseId, escalatingTo)
-    : "";
+  const escalationMessage =
+    escalatingTo && escalatingTo !== "prudente"
+      ? pickCaseCopy(t.verdict.escalation[escalatingTo], verdict.caseId, escalatingTo)
+      : "";
   const variantMessage = pickCaseCopy(t.verdict.variantTransition, verdict.resultId, "variant");
   const publicExtract: PublicCaseExtract = {
     caseId: verdict.caseId,
@@ -664,6 +762,12 @@ function VerdictScreen({
     );
     return () => clearTimeout(timer);
   }, [onVariant, reduced, variantPending]);
+
+  useEffect(() => {
+    if (copied !== "error") return;
+    manualCopyRef.current?.focus();
+    manualCopyRef.current?.select();
+  }, [copied, verdict.resultId]);
 
   if (verdict.refused && verdict.refusal) {
     return (
@@ -809,9 +913,19 @@ function VerdictScreen({
                 </Button>
               </div>
               {copied !== "idle" && (
-                <p aria-live="polite" className="text-sm text-muted-foreground">
-                  {copied === "ok" ? t.verdict.copied : t.verdict.copyError}
-                </p>
+                <div aria-live="polite" className="space-y-2 text-sm text-muted-foreground">
+                  <p>{copied === "ok" ? t.verdict.copied : t.verdict.copyError}</p>
+                  {copied === "error" ? (
+                    <textarea
+                      aria-label={t.verdict.authorizedExcuse}
+                      className="min-h-24 w-full resize-y rounded-md border border-divider bg-background p-3 text-foreground"
+                      onFocus={(event) => event.currentTarget.select()}
+                      readOnly
+                      ref={manualCopyRef}
+                      value={verdict.excuse.trim()}
+                    />
+                  ) : null}
+                </div>
               )}
               {maxed && (
                 <p className="border-l-2 border-stamp pl-3 text-xs text-muted-foreground">

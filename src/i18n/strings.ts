@@ -2,7 +2,7 @@ import type { Audacity, Locale } from "@/engine/types";
 
 export interface UIStrings {
   brandSubtitle: string;
-  nav: { theme: string; language: string; sound: string };
+  nav: { theme: string; language: string; sound: string; home: string };
   home: {
     kicker: string;
     title: string;
@@ -51,10 +51,13 @@ export interface UIStrings {
     label: string;
     question: string;
     registered: string;
-    contextTitle: string;
-    contextLabel: string;
-    contextPlaceholder: string;
-    contextWarning: string;
+    back: string;
+  };
+  intent: {
+    label: string;
+    title: string;
+    subtitle: string;
+    placeholder: string;
     cta: string;
     back: string;
   };
@@ -108,7 +111,12 @@ export interface UIStrings {
 
 const es: UIStrings = {
   brandSubtitle: "Oficina de Excusas Improbables",
-  nav: { theme: "Cambiar tema", language: "Idioma", sound: "Sonido" },
+  nav: {
+    theme: "Cambiar tema",
+    language: "Idioma",
+    sound: "Sonido",
+    home: "Volver al inicio",
+  },
   home: {
     kicker: "Departamento E3K · Admisión de casos",
     title: "Toda gran excusa merece un juicio justo.",
@@ -156,18 +164,20 @@ const es: UIStrings = {
   options: {
     credibility: { sospechosa: "Sospechosa", razonable: "Razonable", impecable: "Impecable" },
     drama: { seco: "Seco", cinematografico: "Cinematográfico", telenovela: "Telenovela" },
-    audacity: { prudente: "Prudente", valiente: "Valiente", sin_retorno: "Sin retorno" },
+    audacity: { prudente: "PRUDENTE", valiente: "VALIENTE", sin_retorno: "SIN RETORNO" },
     relationship: { formal: "Formal", cercana: "Cercana", confianza: "Demasiada confianza" },
   },
   interrogation: {
     label: "Interrogatorio preliminar",
     question: "Pregunta",
     registered: "Declaración incorporada al expediente",
-    contextTitle: "Anexo voluntario",
-    contextLabel: "¿Algo más que el tribunal deba saber?",
-    contextPlaceholder: "Ej.: confirmé una cena familiar y descubrí que juega mi equipo…",
-    contextWarning:
-      "No incluyas nombres ni información sensible. El tribunal ya tiene suficientes problemas.",
+    back: "Volver",
+  },
+  intent: {
+    label: "Clasificación del escenario",
+    title: "¿De qué te quieres salvar?",
+    subtitle: "Elige el supuesto exacto para limitar la defensa a hechos pertinentes.",
+    placeholder: "Selecciona un escenario",
     cta: "Solicitar deliberación",
     back: "Volver",
   },
@@ -188,8 +198,7 @@ const es: UIStrings = {
     repair: "Instrucciones del tribunal",
     copy: "Copiar excusa",
     copied: "Copia certificada. Niega haber estado aquí.",
-    copyError:
-      "El sistema judicial ha perdido el expediente detrás de un archivador. Intenta de nuevo.",
+    copyError: "No se pudo copiar automáticamente. Selecciona la excusa y pulsa Ctrl+C.",
     variant: "Generar variante",
     increaseAudacity: "Aumentar descaro",
     defyTribunal: "Desafiar al tribunal",
@@ -256,7 +265,12 @@ const es: UIStrings = {
 
 const en: UIStrings = {
   brandSubtitle: "Office of Improbable Excuses",
-  nav: { theme: "Toggle theme", language: "Language", sound: "Sound" },
+  nav: {
+    theme: "Toggle theme",
+    language: "Language",
+    sound: "Sound",
+    home: "Return to home",
+  },
   home: {
     kicker: "Department E3K · Case intake",
     title: "Every great excuse deserves a fair trial.",
@@ -304,17 +318,20 @@ const en: UIStrings = {
   options: {
     credibility: { sospechosa: "Suspicious", razonable: "Reasonable", impecable: "Impeccable" },
     drama: { seco: "Dry", cinematografico: "Cinematic", telenovela: "Soap opera" },
-    audacity: { prudente: "Prudent", valiente: "Bold", sin_retorno: "No return" },
+    audacity: { prudente: "PRUDENT", valiente: "BOLD", sin_retorno: "NO RETURN" },
     relationship: { formal: "Formal", cercana: "Close", confianza: "Far too comfortable" },
   },
   interrogation: {
     label: "Preliminary interrogation",
     question: "Question",
     registered: "Statement entered into the case file",
-    contextTitle: "Voluntary appendix",
-    contextLabel: "Additional context, should you wish to incriminate yourself",
-    contextPlaceholder: "E.g. I confirmed a family dinner and then found out my team plays…",
-    contextWarning: "The tribunal advises against incriminating yourself with full names.",
+    back: "Back",
+  },
+  intent: {
+    label: "Scenario classification",
+    title: "What are you trying to get out of?",
+    subtitle: "Choose the exact situation so the defence stays relevant to your case.",
+    placeholder: "Select a scenario",
     cta: "Request deliberation",
     back: "Back",
   },
@@ -327,7 +344,7 @@ const en: UIStrings = {
     tribunal: "Tribunal of Social Commitments",
     file: "Case file",
     resolution: "Final ruling",
-    authorizedExcuse: "Authorised excuse",
+    authorizedExcuse: "Authorized excuse",
     followUp: "If they ask “but what happened?”",
     risk: "Discovery risk",
     riskDisclaimer: "Ceremonial figure. The tribunal does not practise real statistics.",
@@ -335,7 +352,7 @@ const en: UIStrings = {
     repair: "Recommended reparation",
     copy: "Copy excuse",
     copied: "Excuse committed to clipboard. Deny you were ever here.",
-    copyError: "The judicial system lost the file behind a cabinet. Try again.",
+    copyError: "Automatic copy failed. Select the excuse and press Ctrl+C.",
     variant: "Generate variant",
     increaseAudacity: "Increase nerve",
     defyTribunal: "Defy the tribunal",
@@ -365,7 +382,7 @@ const en: UIStrings = {
     categoryLabel: "Category",
     audacityLabel: "Nerve",
     verdictLabel: "Ruling",
-    excuseLabel: "Authorised excuse",
+    excuseLabel: "Authorized excuse",
     riskLabel: "Discovery risk",
     close: "Close",
     share: "Share",
@@ -385,135 +402,4 @@ const en: UIStrings = {
   common: { back: "Back", step: "Stage" },
 };
 
-const pt: UIStrings = {
-  brandSubtitle: "Escritório de Desculpas Improváveis",
-  nav: { theme: "Alternar tema", language: "Idioma", sound: "Som" },
-  home: {
-    kicker: "Departamento E3K · Admissão de casos",
-    title: "Toda grande desculpa merece um julgamento justo.",
-    subtitle:
-      "Apresente o compromisso do qual quer escapar. Avaliaremos os fatos, seu nível de ousadia e as chances reais de sair impune.",
-    cta: "Apresentar meu caso",
-    secondary: "Surpreenda-me",
-    micro: "Não garantimos absolvição.",
-    dossier: {
-      file: "Processo",
-      accusedLabel: "Acusado",
-      accused: "Pessoa que aceitou planos rápido demais",
-      offenceLabel: "Delito",
-      offence: "Compromisso social de entusiasmo duvidoso",
-      riskLabel: "Risco",
-      risk: "Moderadamente preocupante",
-      statusLabel: "Situação",
-      status: "Pendente de álibi",
-      stamp: "Caso admitido",
-    },
-  },
-  category: {
-    title: "Do que você está tentando escapar?",
-    subtitle: "O tribunal precisa classificar corretamente sua má decisão.",
-    cta: "Continuar",
-    empty: "O processo está suspeitosamente vazio.",
-  },
-  config: {
-    title: "Vamos calibrar a defesa.",
-    subtitle: "Uma desculpa ruim pode ser pior do que comparecer.",
-    credibility: "Credibilidade",
-    credibilityHelp: "Quanto essa história deve sobreviver ao contato com a realidade?",
-    drama: "Drama",
-    dramaHelp: "Quantidade legalmente tolerável de dramaticidade.",
-    audacity: "Ousadia",
-    audacityHelp: "Determina quanto da sua reputação você aceita arriscar.",
-    relationship: "Relação com a vítima",
-    relationshipHelp: "Ajusta o tom da comunicação oficial.",
-    indexTitle: "Índice provisório",
-    indexCredibility: "Credibilidade",
-    indexDrama: "Drama",
-    indexAudacity: "Ousadia",
-    cta: "Solicitar interrogatório",
-  },
-  options: {
-    credibility: { sospechosa: "Suspeita", razonable: "Razoável", impecable: "Impecável" },
-    drama: { seco: "Seco", cinematografico: "Cinematográfico", telenovela: "Novela" },
-    audacity: { prudente: "Prudente", valiente: "Corajosa", sin_retorno: "Sem volta" },
-    relationship: { formal: "Formal", cercana: "Próxima", confianza: "Intimidade excessiva" },
-  },
-  interrogation: {
-    label: "Interrogatório preliminar",
-    question: "Pergunta",
-    registered: "Declaração incorporada ao processo",
-    contextTitle: "Anexo voluntário",
-    contextLabel: "Contexto adicional, caso queira se incriminar",
-    contextPlaceholder: "Ex.: confirmei um jantar de família e descobri que meu time joga…",
-    contextWarning: "O tribunal recomenda não se incriminar com nomes completos.",
-    cta: "Solicitar deliberação",
-    back: "Voltar",
-  },
-  deliberation: {
-    skip: "Pular deliberação",
-    stamp: "Caso resolvido",
-    session: "Sessão reservada do tribunal",
-  },
-  verdict: {
-    tribunal: "Tribunal de Compromissos Sociais",
-    file: "Processo",
-    resolution: "Resolução definitiva",
-    authorizedExcuse: "Desculpa autorizada",
-    followUp: "Se perguntarem “mas o que aconteceu?”",
-    risk: "Risco de descoberta",
-    riskDisclaimer: "Número cerimonial. O tribunal não pratica estatística real.",
-    weakness: "Ponto fraco do caso",
-    repair: "Reparação recomendada",
-    copy: "Copiar desculpa",
-    copied: "Desculpa incorporada à área de transferência. Negue ter estado aqui.",
-    copyError: "O sistema judicial perdeu o processo atrás de um arquivo. Tente de novo.",
-    variant: "Gerar variante",
-    increaseAudacity: "Aumentar ousadia",
-    defyTribunal: "Desafiar o tribunal",
-    maxWarning: "A instituição declina toda responsabilidade reputacional.",
-    share: "Compartilhar processo",
-    newCase: "Novo caso",
-    audacityLabel: "Ousadia",
-    stamps: {
-      prudente: ["Resolução definitiva"],
-      valiente: ["Resolução definitiva"],
-      sin_retorno: ["Resolução definitiva"],
-    },
-    escalation: {
-      valiente: ["Reabrindo o processo com menos prudência…"],
-      sin_retorno: ["Elevando o caso além da supervisão institucional…"],
-    },
-    variantTransition: [
-      "Solicitando uma segunda versão dos fatos…",
-      "Reatribuindo o processo a outro funcionário…",
-    ],
-    limitReached: "Limite institucional alcançado",
-    refusalStamp: "Processo inadmissível",
-  },
-  share: {
-    title: "Extrato público do processo",
-    caseLabel: "Processo",
-    categoryLabel: "Categoria",
-    audacityLabel: "Ousadia",
-    verdictLabel: "Decisão",
-    excuseLabel: "Desculpa autorizada",
-    riskLabel: "Risco de descoberta",
-    close: "Fechar",
-    share: "Compartilhar",
-    download: "Baixar imagem",
-    shared: "Processo colocado em circulação.",
-    downloaded: "Cópia do processo retirada com sucesso.",
-    copiedText: "Documento comprometedor copiado para a área de transferência.",
-    shareError: "O arquivo se recusou a sair do tribunal. Tente novamente.",
-    tagline: "Não garantimos absolvição.",
-    punchlines: [
-      "Fonte: pensamento positivo.",
-      "Fonte: pensamento positivo.",
-      "Documento não verificado por nenhuma autoridade competente.",
-      "Validade jurídica: nenhuma.",
-    ],
-  },
-  common: { back: "Voltar", step: "Etapa" },
-};
-
-export const STRINGS: Record<Locale, UIStrings> = { es, en, "pt-BR": pt };
+export const STRINGS: Record<Locale, UIStrings> = { en, es };

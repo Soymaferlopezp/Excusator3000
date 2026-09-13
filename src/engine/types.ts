@@ -1,21 +1,12 @@
-export type Category =
-  "trabajo" | "estudios" | "familia" | "cita" | "amigos" | "ejercicio" | "favor" | "inconfesable";
+export type Category = "familia" | "amigos" | "trabajo" | "estudios" | "cita";
 
-export const CATEGORIES: Category[] = [
-  "trabajo",
-  "estudios",
-  "familia",
-  "cita",
-  "amigos",
-  "ejercicio",
-  "favor",
-  "inconfesable",
-];
+export const CATEGORIES: Category[] = ["familia", "amigos", "trabajo", "estudios", "cita"];
 
 export type Credibility = "sospechosa" | "razonable" | "impecable";
 export type Drama = "seco" | "cinematografico" | "telenovela";
 export type Audacity = "prudente" | "valiente" | "sin_retorno";
 export type Relationship = "formal" | "cercana" | "confianza";
+export type ScenarioIntent = string;
 
 export type ComedyStyle =
   | "deadpan"
@@ -44,14 +35,13 @@ export type GenerationSignal =
   | "birthday"
   | "sports"
   | "dinner"
-  | "favorDebt"
   | "romanticExpectation"
   | "lowEnergy"
   | "visibilityRisk";
 
 export const AUDACITY_ORDER: Audacity[] = ["prudente", "valiente", "sin_retorno"];
 
-export type Locale = "es" | "en" | "pt-BR";
+export type Locale = "en" | "es";
 
 export interface CaseConfig {
   credibility: Credibility;
@@ -139,6 +129,7 @@ export interface CaseAnswer {
 export interface CaseState {
   caseId: string;
   category: Category | null;
+  scenarioIntent: ScenarioIntent | null;
   config: CaseConfig;
   answers: CaseAnswer[];
   context: string;

@@ -81,16 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Excusator3000 — Oficina de Excusas Improbables" },
+      { title: "Excusator3000 — Office of Improbable Excuses" },
       {
         name: "description",
         content:
-          "Tribunal de compromisos sociales: presenta tu caso y recibe una excusa oficialmente autorizada.",
+          "Present your case to the Court of Social Commitments and receive an officially authorized excuse.",
       },
-      { property: "og:title", content: "Excusator3000 — Oficina de Excusas Improbables" },
+      { property: "og:title", content: "Excusator3000 — Office of Improbable Excuses" },
       {
         property: "og:description",
-        content: "Toda gran excusa merece un juicio justo.",
+        content: "Every great excuse deserves a fair trial.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -103,7 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/excusator3000-mark.svg", type: "image/svg+xml" },
+      { rel: "alternate icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
 
@@ -115,7 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         <HeadContent />

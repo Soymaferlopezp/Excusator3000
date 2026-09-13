@@ -1,7 +1,7 @@
 import contentEs from "./content.es";
 import contentEn from "./content.en";
-import contentPt from "./content.pt";
 import { getRecent, pickFresh, remember } from "./antiRepeat";
+import { conceptMatchesScenarioIntent } from "./scenarioIntents";
 import {
   AUDACITY_ORDER,
   type Audacity,
@@ -17,9 +17,8 @@ import {
 } from "./types";
 
 export const CONTENT: Record<Locale, LocaleContent> = {
-  es: contentEs,
   en: contentEn,
-  "pt-BR": contentPt,
+  es: contentEs,
 };
 
 export function getContent(locale: Locale): LocaleContent {
@@ -71,22 +70,48 @@ export function riskStatus(risk: number, content: LocaleContent): string {
 const FORBIDDEN =
   /\b(muert\w+|muri[óo]\w*|falleci[óo]\w*|c[áa]ncer|hospital\w*|enferm\w+ grave|accidente|polic[íi]a|denuncia|abogad\w+|demanda|falsific\w+|certificad\w+ m[ée]dic\w+|receta|fraude|estafa|robo|death|died|dying|cancer|hospital|ambulance|accident|police|lawsuit|forge|fake (doctor|medical|police)|morte|morreu|c[âa]ncer|pol[íi]cia|acidente|fraude|falsific\w+)\b/i;
 
+const SERIOUS_DECEPTION =
+  /\b(fake|forge|fabricate|falsify|invent|alter|edit|crear|fabricar|inventar|falsificar|alterar|editar|mentir|enga[nñ]ar|lie)\b.{0,60}\b(evidence|proof|screenshot|receipt|record|certificate|medical|doctor|court|bank|tax|visa|immigration|emergency|prueba|evidencia|captura|recibo|registro|certificado|medic\w*|doctor\w*|tribunal|banco|impuesto\w*|visado|visa|inmigracion|emergencia|urgencia)\b|\b(money laundering|tax evasion|bank fraud|immigration fraud|lavado de dinero|evasion fiscal|fraude bancario|fraude migratorio)\b/i;
+
+const SELF_HARM =
+  /\b(suicid\w*|self[ -]?harm|kill myself|hurt myself|end my life|matarme|hacerme da[nñ]o|quitarme la vida)\b/i;
+
+const CRIME_CONCEALMENT =
+  /\b(conceal|cover up|hide|destroy|ocultar|encubrir|esconder|destruir)\b.{0,60}\b(crime|offence|body|corpse|evidence|weapon|delito|crimen|cadaver|cuerpo|prueba|evidencia|arma)\b/i;
+
+const IMPERSONATION =
+  /\b(impersonat\w*|identity theft|suplant\w*|robo de identidad|hacerse pasar por|hacerme pasar por|pretend to be)\b/i;
+
+const HARASSMENT_OR_EXPLOITATION =
+  /\b(harass\w*|stalk\w*|blackmail\w*|extort\w*|threaten\w*|acos\w*|acech\w*|chantaj\w*|extors\w*|amenaz\w*)\b|\b(manipulate|deceive|pressure|coerce|manipular|enga[nñ]ar|presionar|coaccionar)\b.{0,50}\b(child|minor|elderly|disabled|vulnerable|ni[nñ]\w*|menor|ancian\w*|discapacitad\w*|vulnerable)\b/i;
+
 export function isHarmfulContext(context: string): boolean {
-  return FORBIDDEN.test(normalizeContext(context));
+  const normalized = normalizeContext(context);
+  return [
+    FORBIDDEN,
+    SERIOUS_DECEPTION,
+    SELF_HARM,
+    CRIME_CONCEALMENT,
+    IMPERSONATION,
+    HARASSMENT_OR_EXPLOITATION,
+  ].some((pattern) => pattern.test(normalized));
 }
 
 const PROTECTED_CHARACTERISTICS = [
   /\b(gay|gays|homosexual|homosexuales|lesbiana|lesbianas|bisexual|bisexuales)\b/,
-  /\b(gente negra|negro|negra|negros|negras|asiatico|asiatica|asiaticos|asiaticas|arabe|arabes|indigena|indigenas)\b/,
-  /\b(inmigrante|inmigrantes|extranjero|extranjera|extranjeros|extranjeras|mexicano|mexicana|mexicanos|mexicanas|colombiano|colombiana|colombianos|colombianas|venezolano|venezolana|venezolanos|venezolanas)\b/,
+  /\b(gente negra|negro|negra|negros|negras|black people|asian|asiatico|asiatica|asiaticos|asiaticas|arab|arabe|arabes|indigenous|indigena|indigenas)\b/,
+  /\b(immigrant|immigrants|foreigner|foreigners|inmigrante|inmigrantes|extranjero|extranjera|extranjeros|extranjeras|mexican|mexicano|mexicana|mexicanos|mexicanas|colombian|colombiano|colombiana|colombianos|colombianas|venezuelan|venezolano|venezolana|venezolanos|venezolanas)\b/,
+  /\b(muslim|muslims|jewish|jews|musulman|musulmanes|judio|judia|judios|judias)\b/,
+  /\b(transgender|trans people|transexual|transexuales|disabled people|discapacitado|discapacitada|discapacitados|discapacitadas)\b/,
 ];
 
 const EXPLICIT_AVOIDANCE =
-  /\b(no quiero (ir|juntarme|estar|verlos|verlas)|quiero evitar|prefiero evitar|prefiero no estar|me niego a (ir|juntarme|estar))\b/;
-const CAUSAL_LINK = /\b(porque|ya que|por el hecho de que)\b/;
+  /\b(no quiero (ir|juntarme|estar|verlos|verlas)|quiero evitar|prefiero evitar|prefiero no estar|me niego a (ir|juntarme|estar)|i do not want to (go|meet|be there|see them)|i dont want to (go|meet|be there|see them)|i want to avoid|want to avoid|i refuse to (go|meet|be there))\b/;
+const CAUSAL_LINK = /\b(porque|ya que|por el hecho de que|because|since)\b/;
 const DIRECT_EXCLUSION =
-  /\b(quiero evitar|prefiero evitar|no quiero juntarme con|prefiero no estar con|me niego a estar con)\b.{0,40}$/;
-const IMPLICIT_REJECTION = /\bpero\b.{0,50}\b(van|hay|habra|asisten|vienen|son)\b/;
+  /\b(quiero evitar|prefiero evitar|no quiero juntarme con|prefiero no estar con|me niego a estar con|i want to avoid|want to avoid|i do not want to be with|i dont want to be with|i refuse to be with)\b.{0,40}$/;
+const IMPLICIT_REJECTION =
+  /\b(pero\b.{0,50}\b(van|hay|habra|asisten|vienen|son)|but\b.{0,50}\b(they are|there are|will attend|are coming))\b/;
 
 /** Detects an exclusionary motive, not a protected identity mention by itself. */
 export function hasDiscriminatoryMotivation(context: string): boolean {
@@ -117,14 +142,11 @@ export interface GenerateOptions {
 }
 
 const CATEGORY_SIGNALS: Record<Category, GenerationSignal[]> = {
+  familia: ["familyPressure", "closeRelationship"],
+  amigos: ["groupChatEvidence", "closeRelationship"],
   trabajo: ["workPressure", "authorityFigure"],
   estudios: ["academicPressure", "authorityFigure"],
-  familia: ["familyPressure", "closeRelationship"],
   cita: ["romanticExpectation"],
-  amigos: ["groupChatEvidence", "closeRelationship"],
-  ejercicio: ["lowEnergy"],
-  favor: ["favorDebt"],
-  inconfesable: [],
 };
 
 const CONTEXT_RULES: Array<[RegExp, GenerationSignal[]]> = [
@@ -143,24 +165,30 @@ const CONTEXT_RULES: Array<[RegExp, GenerationSignal[]]> = [
 ];
 
 const EMPTY_POOL_REFUSAL: Record<Locale, { title: string; body: string }> = {
-  es: {
-    title: "El tribunal no encontró una coartada disponible.",
-    body: "El expediente queda en pausa para evitar emitir una resolución incompleta.",
-  },
   en: {
-    title: "The tribunal found no available alibi.",
-    body: "The case has been paused rather than issuing an incomplete ruling.",
+    title: "Content bank pending.",
+    body: "New excuse content will be added here.",
   },
-  "pt-BR": {
-    title: "O tribunal não encontrou um álibi disponível.",
-    body: "O processo foi pausado para evitar uma decisão incompleta.",
+  es: {
+    title: "Banco de contenido pendiente.",
+    body: "Aquí se añadirá el nuevo contenido de excusas.",
+  },
+};
+
+const INTENT_REQUIRED_REFUSAL: Record<Locale, { title: string; body: string }> = {
+  en: {
+    title: "Scenario required.",
+    body: "Select what you are trying to get out of before requesting a ruling.",
+  },
+  es: {
+    title: "Falta definir el escenario.",
+    body: "Selecciona de qué te quieres salvar antes de solicitar un dictamen.",
   },
 };
 
 const DISCRIMINATION_VERDICT: Record<Locale, string> = {
-  es: "CASO PARCIALMENTE INADMISIBLE",
   en: "CASE PARTIALLY INADMISSIBLE",
-  "pt-BR": "CASO PARCIALMENTE INADMISSÍVEL",
+  es: "CASO PARCIALMENTE INADMISIBLE",
 };
 
 export function normalizeContext(value: string): string {
@@ -237,8 +265,13 @@ function pickOpening(
   content: LocaleContent,
   state: CaseState,
   locale: Locale,
+  body: string,
   random: () => number,
 ): string {
+  const authoredOpening =
+    /^(hey|okay|look|quick question|sorry|oye|mira|perdona|bueno|oi|ent[aã]o|olha|desculpa)\b/i;
+  if (authoredOpening.test(body.trim()) || random() < 0.65) return "";
+
   const relationship = state.config.relationship;
   const alternatives = content.relationshipOpenings?.[relationship];
   if (!alternatives?.length) return content.relationshipOpening[relationship];
@@ -258,7 +291,7 @@ function pickInstitutionalPunchline(
   locale: Locale,
   random: () => number,
 ): InstitutionalPunchline | undefined {
-  if (locale !== "es" || random() >= 0.6) return undefined;
+  if (random() >= 0.6) return undefined;
   const eligible = (content.institutionalPunchlines ?? []).filter(
     (item) =>
       risk >= (item.minRisk ?? 0) &&
@@ -322,8 +355,28 @@ export function generateVerdict({
     };
   }
 
-  const requestedPool = content.excuses[category]?.[level] ?? [];
-  const pool = requestedPool.length > 0 ? requestedPool : allBlocks(content, category);
+  if (!state.scenarioIntent) {
+    return {
+      resultId: `intent-required-${state.caseId}`,
+      caseId: state.caseId,
+      verdict: content.verdicts[0] ?? "",
+      excuse: "",
+      followUp: "",
+      weakness: "",
+      repair: "",
+      risk: 0,
+      riskStatus: content.riskStatus.low,
+      refused: true,
+      refusal: INTENT_REQUIRED_REFUSAL[locale],
+    };
+  }
+
+  const scenarioIntent = state.scenarioIntent;
+  const matchesIntent = (block: ExcuseBlock) =>
+    conceptMatchesScenarioIntent(locale, category, block.conceptId, scenarioIntent);
+  const requestedPool = (content.excuses[category]?.[level] ?? []).filter(matchesIntent);
+  const pool =
+    requestedPool.length > 0 ? requestedPool : allBlocks(content, category).filter(matchesIntent);
   if (pool.length === 0) {
     return {
       resultId: `empty-${state.caseId}`,
@@ -357,14 +410,14 @@ export function generateVerdict({
   const best = Math.max(...scored.map((item) => item.score));
   const finalists = scored.filter((item) => item.score >= best - 4).map((item) => item.block);
   const block =
-    pickFresh(finalists, (item) => item.id, { kind: "excuse", scope, random }) ?? pool[0];
+    pickFresh(finalists, (item) => item.id, { kind: "excuse", scope, random }) ?? pool[0]!;
   const verdict = pickFresh(
     content.verdicts.map((v, i) => ({ id: `${locale}-verdict-${i}`, v })),
     (x) => x.id,
     { kind: "verdict", scope, random },
   );
 
-  const opening = pickOpening(content, state, locale, random);
+  const opening = pickOpening(content, state, locale, block.body, random);
   const modifierMode = block.modifierMode ?? "legacy";
   const tail =
     modifierMode === "legacy" || modifierMode === "drama"
@@ -374,7 +427,10 @@ export function generateVerdict({
     modifierMode === "legacy" || modifierMode === "credibility"
       ? content.credibilityNote[state.config.credibility]
       : "";
-  const excuse = `${opening} ${block.body}${tail}${credNote}`.replace(/\s+/g, " ").trim();
+  const body = opening
+    ? block.body
+    : `${block.body.charAt(0).toLocaleUpperCase(locale)}${block.body.slice(1)}`;
+  const excuse = `${opening} ${body}${tail}${credNote}`.replace(/\s+/g, " ").trim();
 
   const risk = clamp(computeRisk(effectiveState), 4, 97);
   const punchline = pickInstitutionalPunchline(content, signals, risk, locale, random);
@@ -392,7 +448,7 @@ export function generateVerdict({
   return {
     resultId: `${block.id}-${Date.now()}`,
     candidateId: block.id,
-    conceptId: block.conceptId,
+    ...(block.conceptId ? { conceptId: block.conceptId } : {}),
     caseId: state.caseId,
     verdict: verdict?.v ?? content.verdicts[0] ?? "",
     excuse,
