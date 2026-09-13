@@ -3,9 +3,7 @@
     <source media="(prefers-color-scheme: dark)" srcset="./public/excusator3000-mark.svg">
     <img src="./public/excusator3000-mark.svg" alt="Excusator3000 official mark" width="132">
   </picture>
-
-  <br><br>
-
+  <br>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./public/excusator3000-wordmark-dark.svg">
     <img src="./public/excusator3000-wordmark-light.svg" alt="Excusator3000" width="430">
@@ -18,7 +16,9 @@
   <p>
     <a href="https://excusator3000-three.vercel.app/">Website</a>
     ·
-    <a href="VIDEO_DEMO_URL">Video Demo — URL pending</a>
+    <a href="https://www.youtube.com/watch?v=srEUH7NRZmU">Video Demo</a>
+    ·
+    <a href="https://x.com/marylopezpaiva/status/2099241501347684485">X Post</a>
   </p>
 </div>
 
